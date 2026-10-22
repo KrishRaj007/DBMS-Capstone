@@ -1,23 +1,118 @@
-# Python
+# ============================================================
+# Music Analytics DBMS Capstone — .gitignore
+# Covers: Node.js, React/Vite, Python, SQLite, raw datasets
+# ============================================================
+
+# ─── Node.js ────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+package-lock.json.bak
+
+# ─── Vite / React Build Outputs ────────────────────────────
+Frontend/dist/
+Frontend/.vite/
+Frontend/build/
+
+# ─── Environment Variables ──────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+# Keep the example template
+!.env.example
+!Backend/.env.example
+
+# ─── Python ─────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
+*.pyo
+*.pyd
 .Python
+
+# Virtual environments
 env/
 venv/
+.venv/
 ENV/
+env.bak/
+venv.bak/
 
-# Intermediate ETL Data & SQLite Databases
-data/*.sqlite
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+MANIFEST
+.eggs/
+
+# pytest / testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ─── Raw Dataset Files (too large for git) ──────────────────
+# Last.fm 1K Dataset — keep README, ignore large TSV
+lastfm-dataset-1K/**/*.tsv
+lastfm-dataset-1K/**/*.csv
+# Allow dataset README documentation
+!lastfm-dataset-1K/**/README.txt
+!lastfm-dataset-1K/**/README.md
+
+# ─── ETL Intermediate Data (generated, not source) ──────────
 data/cleaned/*.jsonl
 data/cleaned/pipeline_metrics.json
+data/*.sqlite
+data/*.db
+# Keep the directory structure placeholder
 !data/cleaned/.gitkeep
 
-# Environment variables
-.env.local
-.env.*.local
+# ─── Logs ───────────────────────────────────────────────────
+logs/
+*.log
+*.log.*
 
-# Operating System
+# ─── Database Dumps ─────────────────────────────────────────
+*.sql.gz
+*.dump
+*.bak
+
+# ─── Operating System ───────────────────────────────────────
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+# Windows
 Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ─── IDEs & Editors ─────────────────────────────────────────
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+
+# ─── Optional: Large Generated Files ────────────────────────
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+Backend/db/importedData.json
