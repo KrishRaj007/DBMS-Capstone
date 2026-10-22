@@ -137,7 +137,18 @@ A DBMS capstone project for recommending songs based on user preferences and lis
 - `GET /api/analytics/personal`
 - `GET /api/analytics/global`
 
-## 9. Future Scope
-- Spotify / Last.fm API integration for real song data
+## 9. Data Pipeline Architecture (ETL)
+
+### 9.1 Stages
+- **Extract**: Generator-based streaming parser supporting Last.fm 1K TSV structures (`userid-profile.tsv` and `userid-timestamp-artid-artname-traid-traname.tsv`). Memory-bounded chunked execution for multi-gigabyte scale.
+- **Validate**: Checks column structures, mandatory fields (`user_id`, `timestamp`, artist/track identities), and numeric ranges (age 5–120). Logs malformed records to `rejected_records.jsonl`.
+- **Clean**: Unicode NFKC normalization, whitespace sanitization, sentinel null handling, date/timestamp canonicalization, multi-artist parsing (`feat.`, `&`, `vs.`), and title cleaning without destroying version tags.
+- **Transform**: Maps raw records to `UserEntity`, `ArtistEntity`, `SongEntity`, and `ScrobbleEntity`, inferring taxonomy genres and preserving source provenance.
+- **Deduplicate**: Documented matching rules. Songs are scoped strictly to their artist; different songs with matching titles are never merged. Destructive fuzzy deduplication is avoided. Scrobbles deduplicated on `(user_id, timestamp, song_id)`.
+- **Load**: Tri-target loading into Cleaned Intermediate Layer (`data/cleaned/*.jsonl`), Relational Databases (SQLite / MySQL), and Backend JSON Bridge.
+- **Verify**: Post-load automated audits for referential integrity, uniqueness, and absence of hallucinated placeholders.
+
+## 10. Future Scope
+- Spotify / Last.fm live streaming API integration
 - Audio playback with Web Audio API
 - Social features (follow users, shared playlists)
