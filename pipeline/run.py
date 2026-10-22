@@ -4,7 +4,7 @@ Executes the complete 7-stage modular ETL workflow:
 Extract → Validate → Clean → Transform → Deduplicate → Load → Verify
 """
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 from pathlib import Path
 import sys
@@ -61,7 +61,8 @@ def run_pipeline(
     print("=" * 70)
     print("🚀 STARTING MUSIC ANALYTICS ETL DATA PIPELINE")
     print(f"Workflow: Extract → Validate → Clean → Transform → Deduplicate → Load → Verify")
-    print(f"Listening Row Limit: {limit:, if limit else 'ALL (~19.1M)'} | Chunk Size: {chunk_size:,}")
+    limit_str = f"{limit:,}" if limit else "ALL (~19.1M)"
+    print(f"Listening Row Limit: {limit_str} | Chunk Size: {chunk_size:,}")
     print("=" * 70)
 
     engine = DeduplicationEngine()
@@ -73,7 +74,7 @@ def run_pipeline(
     append_rejected_records([], reset=True)
 
     metrics = {
-        "started_at": datetime.utcnow().isoformat() + "Z",
+        "started_at": datetime.now(timezone.utc).isoformat(),
         "profiles": {
             "processed": 0,
             "accepted": 0,
@@ -275,7 +276,7 @@ def run_pipeline(
         print(f"\n  🎯 Data Pipeline Quality Score: {v_report.quality_score}%")
 
     total_time = time.time() - t_start
-    metrics["finished_at"] = datetime.utcnow().isoformat() + "Z"
+    metrics["finished_at"] = datetime.now(timezone.utc).isoformat()
     metrics["total_elapsed_seconds"] = round(total_time, 2)
     metrics["entities"]["unique_users"] = len(engine.users)
     metrics["entities"]["unique_artists"] = len(engine.artists_by_id)

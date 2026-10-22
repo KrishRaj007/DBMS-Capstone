@@ -5,7 +5,7 @@ Users, Artists, Genres, Songs, and Scrobbles.
 Enriches with provenance tracking and assigns deterministic relational identifiers.
 """
 from dataclasses import dataclass, field, asdict
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 from typing import List, Optional, Dict, Any
 from pipeline.clean import (
@@ -101,7 +101,7 @@ def transform_profile_entity(sanitized: Dict[str, Any], source_file: str, line_n
         "source_system": "lastfm-dataset-1k",
         "source_file": source_file,
         "source_line": line_number,
-        "extracted_at": datetime.utcnow().isoformat() + "Z"
+        "extracted_at": datetime.now(timezone.utc).isoformat()
     }
 
     return UserEntity(

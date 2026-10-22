@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Intermediate ETL Data & SQLite Databases
+data/*.sqlite
+data/cleaned/*.jsonl
+data/cleaned/pipeline_metrics.json
+!data/cleaned/.gitkeep
+
+# Environment variables
+.env.local
+.env.*.local
+
+# Operating System
+.DS_Store
+Thumbs.db
