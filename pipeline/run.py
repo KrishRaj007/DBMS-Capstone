@@ -42,11 +42,13 @@ from pipeline.load import (
     append_intermediate_scrobbles,
     append_rejected_records,
     write_pipeline_metrics,
+    adapt_sqlite_schema,
     load_to_sqlite,
     load_to_mysql,
     sync_backend_json_bridge
 )
 from pipeline.verify import run_verification
+import sqlite3
 
 def run_pipeline(
     limit: int = DEFAULT_DEV_LIMIT,
@@ -66,6 +68,16 @@ def run_pipeline(
     print("=" * 70)
 
     engine = DeduplicationEngine()
+
+    # Adapt schema & prime deduplication engine from existing database to preserve existing PKs/FKs
+    if SQLITE_DB_PATH.is_file():
+        conn = sqlite3.connect(str(SQLITE_DB_PATH))
+        adapt_sqlite_schema(conn)
+        engine.prime_from_database(conn)
+        conn.close()
+        print(f"  ✓ Preserved existing database: Primed {len(engine.artist_name_to_id):,} artists, "
+              f"{len(engine.song_title_to_id):,} songs, {len(engine.seen_scrobbles):,} scrobbles")
+
     rejected_records: List[Dict[str, Any]] = []
     scrobbles_buffer: List[Dict[str, Any]] = []
 

@@ -186,6 +186,49 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             details=f"Top songs view returned {top_songs_count} rows, Genre view returned {genre_pop_count} rows"
         ))
 
+        # Check 9: Source Namespaces and Identifiers Audit
+        cursor.execute("SELECT COUNT(*) FROM users WHERE source_namespace IS NULL OR source_namespace = ''")
+        null_u_ns = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM artists WHERE source_namespace IS NULL OR source_namespace = ''")
+        null_a_ns = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM songs WHERE source_namespace IS NULL OR source_namespace = ''")
+        null_s_ns = cursor.fetchone()[0]
+        ns_passed = (null_u_ns == 0 and null_a_ns == 0 and null_s_ns == 0)
+        report.checks.append(AuditCheck(
+            name="SOURCE_NAMESPACES_PRESERVED",
+            passed=ns_passed,
+            details=f"Missing source namespaces: users={null_u_ns}, artists={null_a_ns}, songs={null_s_ns}"
+        ))
+
+        # Check 10: Appropriate Indexes Provisioned Audit
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='index'")
+        idx_names = {r[0] for r in cursor.fetchall()}
+        required_indexes = ["idx_users_source", "idx_artists_source", "idx_songs_source", "idx_lh_source", "idx_songs_artist"]
+        missing_indexes = [idx for idx in required_indexes if idx not in idx_names]
+        report.checks.append(AuditCheck(
+            name="INDEXES_PROVISIONED",
+            passed=(len(missing_indexes) == 0),
+            details=f"Active indexes: {len(idx_names)}, missing required: {missing_indexes}"
+        ))
+
+        # Check 11: Staging Tables Available Audit
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'staging_%'")
+        staging_tbls = [r[0] for r in cursor.fetchall()]
+        report.checks.append(AuditCheck(
+            name="STAGING_BUFFERS_READY",
+            passed=(len(staging_tbls) >= 4),
+            details=f"Active staging tables: {staging_tbls}"
+        ))
+
+        # Check 12: Aggregated Counts Storage Ready Audit
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='aggregated_listening_counts'")
+        has_alc = cursor.fetchone() is not None
+        report.checks.append(AuditCheck(
+            name="AGGREGATED_COUNTS_STORAGE_READY",
+            passed=has_alc,
+            details="Aggregated listening counts table verified for non-fabricated play counts" if has_alc else "Missing aggregated_listening_counts table"
+        ))
+
     finally:
         conn.close()
 

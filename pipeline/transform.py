@@ -1,13 +1,13 @@
 """
 Stage 4: Transform Module
 Transforms cleaned raw inputs into structured domain entities:
-Users, Artists, Genres, Songs, and Scrobbles.
-Enriches with provenance tracking and assigns deterministic relational identifiers.
+Users, Artists, Genres, Songs, Scrobbles, and Aggregated Listening Counts.
+Enriches with provenance tracking, source namespaces, and source identifiers to prevent ID collisions.
 """
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import hashlib
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from pipeline.clean import (
     normalize_text,
     clean_date_string,
@@ -56,6 +56,7 @@ class UserEntity:
     registered_at: Optional[str]
     source_id: str
     provenance: Dict[str, Any]
+    source_namespace: str = "lastfm"
 
 @dataclass
 class ArtistEntity:
@@ -65,6 +66,8 @@ class ArtistEntity:
     collaborators: List[str]
     genre_id: int
     provenance: Dict[str, Any]
+    source_namespace: str = "lastfm"
+    source_id: Optional[str] = None
 
 @dataclass
 class SongEntity:
@@ -77,6 +80,8 @@ class SongEntity:
     release_date: Optional[str]
     genre_id: int
     provenance: Dict[str, Any]
+    source_namespace: str = "lastfm"
+    source_id: Optional[str] = None
 
 @dataclass
 class ScrobbleEntity:
@@ -88,10 +93,25 @@ class ScrobbleEntity:
     track_mbid: Optional[str]
     duration_listened: int
     provenance: Dict[str, Any]
+    source_namespace: str = "lastfm"
+    source_id: Optional[str] = None
+
+@dataclass
+class AggregatedPlayEntity:
+    artist_name: str
+    play_count: int
+    user_id: Optional[str] = None
+    artist_mbid: Optional[str] = None
+    track_name: Optional[str] = None
+    track_mbid: Optional[str] = None
+    genre_id: Optional[int] = None
+    source_namespace: str = "dataset"
+    source_id: Optional[str] = None
+    provenance: Dict[str, Any] = field(default_factory=dict)
 
 def transform_profile_entity(sanitized: Dict[str, Any], source_file: str, line_number: int) -> UserEntity:
     """
-    Transforms validated profile attributes into a UserEntity with source provenance.
+    Transforms validated profile attributes into a UserEntity with source provenance and namespace.
     """
     uid = sanitized["user_id"]
     reg_clean = clean_date_string(sanitized.get("registered"))
@@ -113,10 +133,15 @@ def transform_profile_entity(sanitized: Dict[str, Any], source_file: str, line_n
         country=country_clean,
         registered_at=reg_clean,
         source_id=uid,
+        source_namespace="lastfm",
         provenance=provenance
     )
 
-def transform_scrobble_entity(sanitized: Dict[str, Any], source_file: str, line_number: int) -> Tuple[ArtistEntity, SongEntity, ScrobbleEntity]:
+def transform_scrobble_entity(
+    sanitized: Dict[str, Any],
+    source_file: str,
+    line_number: int
+) -> Tuple[ArtistEntity, SongEntity, ScrobbleEntity]:
     """
     Transforms validated scrobble attributes into ArtistEntity, SongEntity, and ScrobbleEntity.
     """
@@ -138,12 +163,19 @@ def transform_scrobble_entity(sanitized: Dict[str, Any], source_file: str, line_
         "scrobble_utc": ts_clean
     }
 
+    # Deterministic source IDs to avoid collisions across multiple data imports
+    artist_source_id = art_mbid if art_mbid else hashlib.md5(credit.primary_artist.lower().encode("utf-8")).hexdigest()
+    song_source_id = tra_mbid if tra_mbid else hashlib.md5(f"{credit.primary_artist}::{tra_title}".lower().encode("utf-8")).hexdigest()
+    scrobble_source_id = hashlib.md5(f"{uid}::{ts_clean}::{song_source_id}".encode("utf-8")).hexdigest()
+
     artist_entity = ArtistEntity(
         name=credit.primary_artist,
         mbid=art_mbid,
         original_credit=credit.original_credit,
         collaborators=credit.collaborators,
         genre_id=genre_id,
+        source_namespace="lastfm",
+        source_id=artist_source_id,
         provenance=provenance
     )
 
@@ -156,6 +188,8 @@ def transform_scrobble_entity(sanitized: Dict[str, Any], source_file: str, line_
         duration_seconds=0,         # No duration in raw scrobbles
         release_date=None,          # No release date in raw TSV
         genre_id=genre_id,
+        source_namespace="lastfm",
+        source_id=song_source_id,
         provenance=provenance
     )
 
@@ -167,7 +201,52 @@ def transform_scrobble_entity(sanitized: Dict[str, Any], source_file: str, line_
         track_name=tra_title,
         track_mbid=tra_mbid,
         duration_listened=0,
+        source_namespace="lastfm",
+        source_id=scrobble_source_id,
         provenance=provenance
     )
 
     return artist_entity, song_entity, scrobble_entity
+
+def transform_aggregated_play_entity(
+    sanitized: Dict[str, Any],
+    source_file: str,
+    line_number: int,
+    source_namespace: str = "dataset"
+) -> AggregatedPlayEntity:
+    """
+    Transforms aggregated listening count records (e.g. <user, artist, play_count>)
+    without fabricating timestamps, fake user identities, or synthetic completion sessions.
+    """
+    artist_name = sanitized["artist_name"]
+    play_count = int(sanitized["play_count"])
+    user_id = sanitized.get("user_id")
+    art_mbid = sanitized.get("artist_mbid")
+    track_name = sanitized.get("track_name")
+    track_mbid = sanitized.get("track_mbid")
+
+    genre_id = infer_genre_id(artist_name, track_name)
+
+    provenance = {
+        "source_system": source_namespace,
+        "source_file": source_file,
+        "source_line": line_number,
+        "aggregated": True
+    }
+
+    source_id = hashlib.md5(
+        f"{user_id or ''}::{artist_name}::{track_name or ''}".lower().encode("utf-8")
+    ).hexdigest()
+
+    return AggregatedPlayEntity(
+        artist_name=artist_name,
+        play_count=play_count,
+        user_id=user_id,
+        artist_mbid=art_mbid,
+        track_name=track_name,
+        track_mbid=track_mbid,
+        genre_id=genre_id,
+        source_namespace=source_namespace,
+        source_id=source_id,
+        provenance=provenance
+    )

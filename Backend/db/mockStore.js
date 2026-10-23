@@ -118,7 +118,56 @@ const RAW_SONGS = [
   { title: 'Void Walker',           artist_id: 20, genre_id: 10, album: 'Event Horizon', duration_seconds: 423, release_date: '2024-06-06' },
 ];
 
-const SONGS = RAW_SONGS.map((s, idx) => ({ id: idx + 1, ...s }));
+const SONGS = RAW_SONGS.map((s, idx) => ({ id: idx + 1, ...s, source_namespace: 'local' }));
+
+// Safely load and merge pipeline-imported data without colliding with local primary keys
+const fs = require('fs');
+const path = require('path');
+const importedPath = path.resolve(__dirname, 'importedData.json');
+if (fs.existsSync(importedPath)) {
+  try {
+    const rawData = JSON.parse(fs.readFileSync(importedPath, 'utf8'));
+    if (Array.isArray(rawData.artists)) {
+      const existingNames = new Set(ARTISTS.map(a => a.name.toLowerCase()));
+      let maxAid = Math.max(...ARTISTS.map(a => a.id), 20);
+      for (const impA of rawData.artists) {
+        if (!existingNames.has(impA.name.toLowerCase())) {
+          existingNames.add(impA.name.toLowerCase());
+          ARTISTS.push({
+            id: ++maxAid,
+            name: impA.name,
+            bio: impA.bio,
+            source_namespace: impA.source_namespace || 'lastfm',
+            source_id: impA.source_id || impA.id
+          });
+        }
+      }
+    }
+    if (Array.isArray(rawData.songs)) {
+      const existingTitles = new Set(SONGS.map(s => `${s.artist_id}::${s.title.toLowerCase()}`));
+      let maxSid = Math.max(...SONGS.map(s => s.id), 60);
+      for (const impS of rawData.songs) {
+        const key = `${impS.artist_id}::${impS.title.toLowerCase()}`;
+        if (!existingTitles.has(key)) {
+          existingTitles.add(key);
+          SONGS.push({
+            id: ++maxSid,
+            title: impS.title,
+            artist_id: impS.artist_id,
+            genre_id: impS.genre_id,
+            album: impS.album,
+            duration_seconds: impS.duration_seconds,
+            release_date: impS.release_date,
+            source_namespace: impS.source_namespace || 'lastfm',
+            source_id: impS.source_id || impS.id
+          });
+        }
+      }
+    }
+  } catch (err) {
+    // Non-fatal: mockStore will operate on baseline dataset
+  }
+}
 
 const hashedPassword = bcrypt.hashSync('password123', 10);
 const USERS = [

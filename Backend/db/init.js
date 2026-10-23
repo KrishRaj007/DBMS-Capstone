@@ -1,6 +1,9 @@
 /**
  * Automated Database Initializer for DBMS Capstone Project
- * Executes schema.sql and populates demo seed data.
+ * Safely adapts the database schema, compiles views/triggers/procedures,
+ * and idempotently provisions baseline demo records WITHOUT destroying
+ * existing user accounts, ratings, playlists, preferences, or listening logs.
+ *
  * Run: npm run init-db
  */
 const mysql = require('mysql2/promise');
@@ -132,7 +135,7 @@ const USERS = [
 ];
 
 async function initializeDatabase() {
-  console.log('🚀 Initializing MySQL Database for BeatPulse...\n');
+  console.log('🚀 Initializing / Adapting MySQL Database for BeatPulse...\n');
   const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '3306'),
@@ -154,26 +157,33 @@ async function initializeDatabase() {
 
   try {
     // 1. Create database
-    await conn.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME || 'music_analytics'}\``);
-    await conn.query(`USE \`${process.env.DB_NAME || 'music_analytics'}\``);
-    console.log(`✓ Database \`${process.env.DB_NAME || 'music_analytics'}\` ready`);
+    const dbName = process.env.DB_NAME || 'music_analytics';
+    await conn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+    await conn.query(`USE \`${dbName}\``);
+    console.log(`✓ Database \`${dbName}\` ready`);
 
-    // 2. Drop existing triggers & procedures if any
+    // 2. Drop existing triggers & procedures to safely recompile
     await conn.query(`DROP TRIGGER IF EXISTS trg_after_listen`).catch(() => {});
     await conn.query(`DROP TRIGGER IF EXISTS trg_after_rating`).catch(() => {});
     await conn.query(`DROP PROCEDURE IF EXISTS sp_get_recommendations`).catch(() => {});
     await conn.query(`DROP PROCEDURE IF EXISTS sp_update_preferences`).catch(() => {});
 
-    // 3. Create tables in strict FK order
+    // 3. Create core relational tables in strict FK order
     await conn.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id            INT PRIMARY KEY AUTO_INCREMENT,
-        username      VARCHAR(50)  NOT NULL UNIQUE,
-        email         VARCHAR(100) NOT NULL UNIQUE,
-        password_hash VARCHAR(255) NOT NULL,
-        avatar_url    VARCHAR(500) DEFAULT NULL,
-        created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        id               INT PRIMARY KEY AUTO_INCREMENT,
+        username         VARCHAR(50)  NOT NULL UNIQUE,
+        email            VARCHAR(100) NOT NULL UNIQUE,
+        password_hash    VARCHAR(255) NOT NULL,
+        avatar_url       VARCHAR(500) DEFAULT NULL,
+        gender           VARCHAR(10)  DEFAULT NULL,
+        age              INT          DEFAULT NULL,
+        country          VARCHAR(100) DEFAULT NULL,
+        source_namespace VARCHAR(50)  NOT NULL DEFAULT 'local',
+        source_id        VARCHAR(100) DEFAULT NULL,
+        created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+        updated_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_users_source (source_namespace, source_id)
       )
     `);
 
@@ -188,11 +198,20 @@ async function initializeDatabase() {
 
     await conn.query(`
       CREATE TABLE IF NOT EXISTS artists (
-        id         INT PRIMARY KEY AUTO_INCREMENT,
-        name       VARCHAR(100) NOT NULL,
-        bio        TEXT,
-        image_url  VARCHAR(500) DEFAULT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        id               INT PRIMARY KEY AUTO_INCREMENT,
+        name             VARCHAR(100) NOT NULL,
+        bio              TEXT,
+        image_url        VARCHAR(500) DEFAULT NULL,
+        mbid             VARCHAR(36)  DEFAULT NULL,
+        original_credit  VARCHAR(255) DEFAULT NULL,
+        genre_id         INT          DEFAULT NULL,
+        source_namespace VARCHAR(50)  NOT NULL DEFAULT 'local',
+        source_id        VARCHAR(100) DEFAULT NULL,
+        created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_artists_genre FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE SET NULL,
+        INDEX idx_artists_name   (name),
+        INDEX idx_artists_mbid   (mbid),
+        INDEX idx_artists_source (source_namespace, source_id)
       )
     `);
 
@@ -206,12 +225,19 @@ async function initializeDatabase() {
         duration_seconds INT NOT NULL DEFAULT 0,
         release_date     DATE,
         cover_url        VARCHAR(500) DEFAULT NULL,
+        track_mbid       VARCHAR(36)  DEFAULT NULL,
+        source_namespace VARCHAR(50)  NOT NULL DEFAULT 'local',
+        source_id        VARCHAR(100) DEFAULT NULL,
         created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT fk_songs_artist FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE,
         CONSTRAINT fk_songs_genre  FOREIGN KEY (genre_id)  REFERENCES genres(id)  ON DELETE CASCADE,
-        INDEX idx_songs_artist (artist_id),
-        INDEX idx_songs_genre  (genre_id),
-        INDEX idx_songs_title  (title)
+        INDEX idx_songs_artist       (artist_id),
+        INDEX idx_songs_genre        (genre_id),
+        INDEX idx_songs_title        (title),
+        INDEX idx_songs_artist_title (artist_id, title),
+        INDEX idx_songs_track_mbid   (track_mbid),
+        INDEX idx_songs_release      (release_date),
+        INDEX idx_songs_source       (source_namespace, source_id)
       )
     `);
 
@@ -249,13 +275,18 @@ async function initializeDatabase() {
         id                INT PRIMARY KEY AUTO_INCREMENT,
         user_id           INT NOT NULL,
         song_id           INT NOT NULL,
-        listened_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        listened_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         duration_listened INT NOT NULL DEFAULT 0,
+        source_namespace  VARCHAR(50) NOT NULL DEFAULT 'local',
+        source_id         VARCHAR(100) DEFAULT NULL,
         CONSTRAINT fk_lh_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         CONSTRAINT fk_lh_song FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE,
-        INDEX idx_lh_user        (user_id),
-        INDEX idx_lh_song        (song_id),
-        INDEX idx_lh_listened_at (listened_at)
+        INDEX idx_lh_user          (user_id),
+        INDEX idx_lh_song          (song_id),
+        INDEX idx_lh_listened_at   (listened_at),
+        INDEX idx_lh_user_listened (user_id, listened_at),
+        INDEX idx_lh_song_listened (song_id, listened_at),
+        INDEX idx_lh_source        (source_namespace, source_id)
       )
     `);
 
@@ -287,39 +318,161 @@ async function initializeDatabase() {
         INDEX idx_up_user (user_id)
       )
     `);
-    console.log('✓ 9 Relational tables created with foreign keys and indexes');
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS aggregated_listening_counts (
+        id               INT PRIMARY KEY AUTO_INCREMENT,
+        user_id          INT DEFAULT NULL,
+        artist_id        INT NOT NULL,
+        song_id          INT DEFAULT NULL,
+        play_count       INT NOT NULL DEFAULT 0,
+        source_namespace VARCHAR(50) NOT NULL DEFAULT 'dataset',
+        source_id        VARCHAR(100) DEFAULT NULL,
+        last_updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_alc_user   FOREIGN KEY (user_id)   REFERENCES users(id)   ON DELETE CASCADE,
+        CONSTRAINT fk_alc_artist FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE,
+        CONSTRAINT fk_alc_song   FOREIGN KEY (song_id)   REFERENCES songs(id)   ON DELETE CASCADE,
+        UNIQUE KEY uk_alc_entry (source_namespace, user_id, artist_id, song_id),
+        INDEX idx_alc_user   (user_id),
+        INDEX idx_alc_artist (artist_id),
+        INDEX idx_alc_song   (song_id)
+      )
+    `);
+
+    // Staging tables
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS staging_users (
+        source_id        VARCHAR(100) NOT NULL,
+        source_namespace VARCHAR(50)  NOT NULL DEFAULT 'lastfm',
+        username         VARCHAR(50)  NOT NULL,
+        email            VARCHAR(100) NOT NULL,
+        password_hash    VARCHAR(255) NOT NULL,
+        gender           VARCHAR(10)  DEFAULT NULL,
+        age              INT          DEFAULT NULL,
+        country          VARCHAR(100) DEFAULT NULL,
+        registered_at    TIMESTAMP    NULL,
+        PRIMARY KEY (source_namespace, source_id)
+      )
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS staging_artists (
+        source_id        VARCHAR(100) NOT NULL,
+        source_namespace VARCHAR(50)  NOT NULL DEFAULT 'lastfm',
+        name             VARCHAR(100) NOT NULL,
+        mbid             VARCHAR(36)  DEFAULT NULL,
+        original_credit  VARCHAR(255) DEFAULT NULL,
+        genre_id         INT          DEFAULT NULL,
+        PRIMARY KEY (source_namespace, source_id)
+      )
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS staging_songs (
+        source_id        VARCHAR(100) NOT NULL,
+        source_namespace VARCHAR(50)  NOT NULL DEFAULT 'lastfm',
+        title            VARCHAR(200) NOT NULL,
+        artist_source_id VARCHAR(100) NOT NULL,
+        track_mbid       VARCHAR(36)  DEFAULT NULL,
+        album            VARCHAR(200) DEFAULT NULL,
+        duration_seconds INT          DEFAULT 0,
+        release_date     DATE         DEFAULT NULL,
+        genre_id         INT          DEFAULT NULL,
+        PRIMARY KEY (source_namespace, source_id)
+      )
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS staging_listening_history (
+        id                INT PRIMARY KEY AUTO_INCREMENT,
+        user_source_id    VARCHAR(100) NOT NULL,
+        song_source_id    VARCHAR(100) NOT NULL,
+        listened_at       TIMESTAMP    NOT NULL,
+        duration_listened INT          DEFAULT 0,
+        source_namespace  VARCHAR(50)  NOT NULL DEFAULT 'lastfm',
+        INDEX idx_slh_lookup (user_source_id, song_source_id, listened_at)
+      )
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS staging_aggregated_counts (
+        id                INT PRIMARY KEY AUTO_INCREMENT,
+        user_source_id    VARCHAR(100) DEFAULT NULL,
+        artist_source_id  VARCHAR(100) NOT NULL,
+        song_source_id    VARCHAR(100) DEFAULT NULL,
+        play_count        INT          NOT NULL DEFAULT 0,
+        source_namespace  VARCHAR(50)  NOT NULL DEFAULT 'dataset',
+        INDEX idx_sac_lookup (source_namespace, user_source_id, artist_source_id, song_source_id)
+      )
+    `);
+    console.log('✓ 10 Application tables & 5 Staging buffers verified');
 
     // 4. Create analytical views
     await conn.query(`
       CREATE OR REPLACE VIEW top_songs_view AS
       SELECT
-        s.id, s.title, s.album, s.duration_seconds, s.cover_url, s.release_date,
-        a.name AS artist_name, a.id AS artist_id,
-        g.name AS genre_name, g.id AS genre_id,
-        COUNT(lh.id) AS play_count,
-        COALESCE(AVG(r.rating),0) AS avg_rating,
-        COUNT(DISTINCT r.id) AS rating_count
+        s.id,
+        s.title,
+        s.album,
+        s.duration_seconds,
+        s.cover_url,
+        s.release_date,
+        a.name       AS artist_name,
+        a.id         AS artist_id,
+        g.name       AS genre_name,
+        g.id         AS genre_id,
+        (COALESCE(lh_stats.play_count, 0) + COALESCE(agg_stats.agg_plays, 0)) AS play_count,
+        COALESCE(rate_stats.avg_rating, 0) AS avg_rating,
+        COALESCE(rate_stats.rating_count, 0) AS rating_count
       FROM songs s
         JOIN artists a ON s.artist_id = a.id
         JOIN genres  g ON s.genre_id  = g.id
-        LEFT JOIN listening_history lh ON s.id = lh.song_id
-        LEFT JOIN ratings           r  ON s.id = r.song_id
-      GROUP BY s.id, s.title, s.album, s.duration_seconds, s.cover_url,
-               s.release_date, a.name, a.id, g.name, g.id
+        LEFT JOIN (
+          SELECT song_id, COUNT(*) AS play_count
+          FROM listening_history
+          GROUP BY song_id
+        ) lh_stats ON s.id = lh_stats.song_id
+        LEFT JOIN (
+          SELECT song_id, SUM(play_count) AS agg_plays
+          FROM aggregated_listening_counts
+          WHERE song_id IS NOT NULL
+          GROUP BY song_id
+        ) agg_stats ON s.id = agg_stats.song_id
+        LEFT JOIN (
+          SELECT song_id, AVG(rating) AS avg_rating, COUNT(DISTINCT id) AS rating_count
+          FROM ratings
+          GROUP BY song_id
+        ) rate_stats ON s.id = rate_stats.song_id
       ORDER BY play_count DESC
     `);
 
     await conn.query(`
       CREATE OR REPLACE VIEW genre_popularity_view AS
       SELECT
-        g.id, g.name, g.description,
+        g.id,
+        g.name,
+        g.description,
         COUNT(DISTINCT s.id) AS song_count,
-        COUNT(lh.id) AS total_plays,
-        COALESCE(AVG(r.rating), 0) AS avg_rating
+        (COALESCE(SUM(lh_stats.plays), 0) + COALESCE(SUM(agg_stats.agg_plays), 0)) AS total_plays,
+        COALESCE(AVG(rate_stats.avg_r), 0) AS avg_rating
       FROM genres g
-        LEFT JOIN songs             s  ON g.id = s.genre_id
-        LEFT JOIN listening_history lh ON s.id = lh.song_id
-        LEFT JOIN ratings           r  ON s.id = r.song_id
+        LEFT JOIN songs s ON g.id = s.genre_id
+        LEFT JOIN (
+          SELECT song_id, COUNT(*) AS plays
+          FROM listening_history
+          GROUP BY song_id
+        ) lh_stats ON s.id = lh_stats.song_id
+        LEFT JOIN (
+          SELECT song_id, SUM(play_count) AS agg_plays
+          FROM aggregated_listening_counts
+          WHERE song_id IS NOT NULL
+          GROUP BY song_id
+        ) agg_stats ON s.id = agg_stats.song_id
+        LEFT JOIN (
+          SELECT song_id, AVG(rating) AS avg_r
+          FROM ratings
+          GROUP BY song_id
+        ) rate_stats ON s.id = rate_stats.song_id
       GROUP BY g.id, g.name, g.description
       ORDER BY total_plays DESC
     `);
@@ -327,18 +480,29 @@ async function initializeDatabase() {
     await conn.query(`
       CREATE OR REPLACE VIEW user_analytics_view AS
       SELECT
-        u.id AS user_id, u.username,
-        COUNT(DISTINCT lh.id) AS total_listens,
-        COUNT(DISTINCT lh.song_id) AS unique_songs,
-        COALESCE(SUM(lh.duration_listened), 0) AS total_listen_seconds,
+        u.id AS user_id,
+        u.username,
+        (COALESCE(lh_stats.total_listens, 0) + COALESCE(agg_stats.total_agg_listens, 0)) AS total_listens,
+        COALESCE(lh_stats.unique_songs, 0) AS unique_songs,
+        COALESCE(lh_stats.total_listen_seconds, 0) AS total_listen_seconds,
         COUNT(DISTINCT r.id) AS total_ratings,
         COALESCE(AVG(r.rating), 0) AS avg_given_rating
       FROM users u
-        LEFT JOIN listening_history lh ON u.id = lh.user_id
-        LEFT JOIN ratings           r  ON u.id = r.user_id
-      GROUP BY u.id, u.username
+        LEFT JOIN (
+          SELECT user_id, COUNT(*) AS total_listens, COUNT(DISTINCT song_id) AS unique_songs, SUM(duration_listened) AS total_listen_seconds
+          FROM listening_history
+          GROUP BY user_id
+        ) lh_stats ON u.id = lh_stats.user_id
+        LEFT JOIN (
+          SELECT user_id, SUM(play_count) AS total_agg_listens
+          FROM aggregated_listening_counts
+          WHERE user_id IS NOT NULL
+          GROUP BY user_id
+        ) agg_stats ON u.id = agg_stats.user_id
+        LEFT JOIN ratings r ON u.id = r.user_id
+      GROUP BY u.id, u.username, lh_stats.total_listens, agg_stats.total_agg_listens, lh_stats.unique_songs, lh_stats.total_listen_seconds
     `);
-    console.log('✓ 3 Analytical SQL views created (top_songs_view, genre_popularity_view, user_analytics_view)');
+    console.log('✓ 3 Analytical SQL views compiled with aggregated counts support');
 
     // 5. Stored Procedures
     await conn.query(`
@@ -419,114 +583,53 @@ async function initializeDatabase() {
     `);
     console.log('✓ Database triggers compiled (trg_after_listen, trg_after_rating)');
 
-    // 7. Clear and Seed demo records
-    await conn.query(`
-      SET FOREIGN_KEY_CHECKS = 0;
-      TRUNCATE TABLE user_preferences;
-      TRUNCATE TABLE ratings;
-      TRUNCATE TABLE listening_history;
-      TRUNCATE TABLE playlist_songs;
-      TRUNCATE TABLE playlists;
-      TRUNCATE TABLE songs;
-      TRUNCATE TABLE artists;
-      TRUNCATE TABLE genres;
-      TRUNCATE TABLE users;
-      SET FOREIGN_KEY_CHECKS = 1;
-    `);
-
+    // 7. Non-destructive baseline seeding (preserves existing users, playlists, history)
     for (const g of GENRES) {
-      await conn.query('INSERT INTO genres (name, description) VALUES (?, ?)', [g.name, g.description]);
-    }
-    console.log(`✓ Seeded ${GENRES.length} genres`);
-
-    for (const a of ARTISTS) {
-      await conn.query('INSERT INTO artists (name, bio) VALUES (?, ?)', [a.name, a.bio]);
-    }
-    console.log(`✓ Seeded ${ARTISTS.length} artists`);
-
-    for (const s of SONGS) {
       await conn.query(
-        'INSERT INTO songs (title, artist_id, genre_id, album, duration_seconds, release_date) VALUES (?, ?, ?, ?, ?, ?)',
-        [s.title, s.artist, s.genre, s.album, s.duration, s.date]
+        'INSERT INTO genres (name, description) VALUES (?, ?) ON DUPLICATE KEY UPDATE description = VALUES(description)',
+        [g.name, g.description]
       );
     }
-    console.log(`✓ Seeded ${SONGS.length} songs`);
+    console.log(`✓ Ensured ${GENRES.length} standard genres`);
 
+    for (const a of ARTISTS) {
+      await conn.query(
+        'INSERT INTO artists (name, bio, source_namespace) SELECT ?, ?, "local" WHERE NOT EXISTS (SELECT 1 FROM artists WHERE LOWER(name) = LOWER(?))',
+        [a.name, a.bio, a.name]
+      );
+    }
+    console.log(`✓ Ensured baseline local artists`);
+
+    // Fetch artist id mapping
+    const [existingArtists] = await conn.query('SELECT id, name FROM artists');
+    const artistMap = {};
+    for (const row of existingArtists) {
+      artistMap[row.name.toLowerCase()] = row.id;
+    }
+
+    for (const s of SONGS) {
+      const artObj = ARTISTS[s.artist - 1];
+      const artId = artObj ? artistMap[artObj.name.toLowerCase()] || s.artist : s.artist;
+      await conn.query(
+        'INSERT INTO songs (title, artist_id, genre_id, album, duration_seconds, release_date, source_namespace) ' +
+        'SELECT ?, ?, ?, ?, ?, ?, "local" WHERE NOT EXISTS (SELECT 1 FROM songs WHERE LOWER(title) = LOWER(?) AND artist_id = ?)',
+        [s.title, artId, s.genre, s.album, s.duration, s.date, s.title, artId]
+      );
+    }
+    console.log(`✓ Ensured baseline local songs`);
+
+    // Seed demo users without overwriting existing registered user accounts
     for (const u of USERS) {
       const hash = await bcrypt.hash(u.password, 10);
       await conn.query(
-        'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
-        [u.username, u.email, hash]
+        'INSERT INTO users (username, email, password_hash, source_namespace) ' +
+        'SELECT ?, ?, ?, "local" WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = ? OR email = ?)',
+        [u.username, u.email, hash, u.username, u.email]
       );
     }
-    console.log(`✓ Seeded ${USERS.length} demo users`);
+    console.log(`✓ Ensured demo user accounts (preserved existing user credentials)`);
 
-    // Listening logs
-    const [songRows] = await conn.query('SELECT id, duration_seconds FROM songs');
-    let listensTotal = 0;
-    for (let uId = 1; uId <= 3; uId++) {
-      const count = 35 + Math.floor(Math.random() * 25);
-      for (let i = 0; i < count; i++) {
-        const s = songRows[Math.floor(Math.random() * songRows.length)];
-        const hoursAgo = Math.floor(Math.random() * (90 * 24));
-        const played = Math.floor(s.duration_seconds * (0.6 + Math.random() * 0.4));
-        await conn.query(
-          'INSERT INTO listening_history (user_id, song_id, listened_at, duration_listened) VALUES (?, ?, DATE_SUB(NOW(), INTERVAL ? HOUR), ?)',
-          [uId, s.id, hoursAgo, played]
-        );
-        listensTotal++;
-      }
-    }
-    console.log(`✓ Seeded ${listensTotal} listening logs`);
-
-    // Ratings
-    let ratingsTotal = 0;
-    for (let uId = 1; uId <= 3; uId++) {
-      const sample = [...songRows].sort(() => Math.random() - 0.5).slice(0, 20);
-      for (const s of sample) {
-        const r = 2 + Math.floor(Math.random() * 4); // 2-5 stars
-        try {
-          await conn.query('INSERT INTO ratings (user_id, song_id, rating) VALUES (?, ?, ?)', [uId, s.id, r]);
-          ratingsTotal++;
-        } catch {}
-      }
-    }
-    console.log(`✓ Seeded ${ratingsTotal} ratings`);
-
-    // Playlists
-    const playlists = [
-      { userId: 1, name: 'Chill Vibes',     desc: 'Relaxing tracks for a chill evening',    songs: [1, 4, 19, 22, 49] },
-      { userId: 1, name: 'Workout Mix',     desc: 'High-energy tracks to pump you up',      songs: [7, 8, 55, 56, 13] },
-      { userId: 2, name: 'Late Night Jazz',  desc: 'Smooth jazz for late-night listening',   songs: [31, 32, 33, 34, 35] },
-      { userId: 2, name: 'Indie Favorites',  desc: 'Best indie tracks hand-picked',          songs: [49, 50, 51, 52, 53] },
-      { userId: 3, name: 'Everything Mix',   desc: 'A little bit of everything',             songs: [1, 7, 13, 19, 25, 31, 37, 43, 49, 55] },
-    ];
-
-    for (const pl of playlists) {
-      const [res] = await conn.query(
-        'INSERT INTO playlists (user_id, name, description) VALUES (?, ?, ?)',
-        [pl.userId, pl.name, pl.desc]
-      );
-      for (let pos = 0; pos < pl.songs.length; pos++) {
-        await conn.query(
-          'INSERT INTO playlist_songs (playlist_id, song_id, position) VALUES (?, ?, ?)',
-          [res.insertId, pl.songs[pos], pos + 1]
-        ).catch(() => {});
-      }
-    }
-    console.log(`✓ Seeded ${playlists.length} playlists`);
-
-    // Recalculate preference weights via stored procedure
-    for (let uId = 1; uId <= 3; uId++) {
-      await conn.query('CALL sp_update_preferences(?)', [uId]);
-    }
-    console.log('✓ Computed personalized preference vectors via sp_update_preferences\n');
-
-    console.log('🎉 Database initialization complete!');
-    console.log('   Demo accounts:');
-    console.log('   • john_doe    (john@example.com / password123)');
-    console.log('   • jane_smith  (jane@example.com / password123)');
-    console.log('   • music_lover (music@example.com / password123)\n');
+    console.log('\n🎉 Database initialization and non-destructive schema adaptation complete!');
   } catch (err) {
     console.error('❌ Schema/Seed Error:', err);
     process.exit(1);

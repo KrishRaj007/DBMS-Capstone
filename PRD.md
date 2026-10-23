@@ -17,18 +17,22 @@ A DBMS capstone project for recommending songs based on user preferences and lis
 | Frontend | Vite + React |
 | Styling | Vanilla CSS (Inter font, custom design tokens) |
 
-## 4. Database Schema (ER Model)
+## 4. Database Schema (Adapted ER Model)
 
 ### Tables
-1. **users** — id, username, email, password_hash, avatar_url, created_at, updated_at
-2. **artists** — id, name, bio, image_url, created_at
-3. **genres** — id, name, description, created_at
-4. **songs** — id, title, artist_id (FK), genre_id (FK), album, duration_seconds, release_date, cover_url, created_at
-5. **playlists** — id, user_id (FK), name, description, is_public, created_at, updated_at
-6. **playlist_songs** — id, playlist_id (FK), song_id (FK), position, added_at
-7. **listening_history** — id, user_id (FK), song_id (FK), listened_at, duration_listened
-8. **ratings** — id, user_id (FK), song_id (FK), rating (1-5), created_at
-9. **user_preferences** — id, user_id (FK), genre_id (FK), preference_weight
+1. **users** — id (PK), username, email, password_hash, avatar_url, gender, age, country, source_namespace ('local'|'lastfm'), source_id, created_at, updated_at
+2. **artists** — id (PK), name, bio, image_url, mbid, original_credit, genre_id (FK), source_namespace, source_id, created_at
+3. **genres** — id (PK), name, description, created_at
+4. **songs** — id (PK), title, artist_id (FK), genre_id (FK), album, duration_seconds, release_date, cover_url, track_mbid, source_namespace, source_id, created_at
+5. **playlists** — id (PK), user_id (FK), name, description, is_public, created_at, updated_at
+6. **playlist_songs** — id (PK), playlist_id (FK), song_id (FK), position, added_at
+7. **listening_history** — id (PK), user_id (FK), song_id (FK), listened_at, duration_listened, source_namespace, source_id
+8. **ratings** — id (PK), user_id (FK), song_id (FK), rating (1-5), created_at
+9. **user_preferences** — id (PK), user_id (FK), genre_id (FK), preference_weight
+10. **aggregated_listening_counts** — id (PK), user_id (FK, nullable), artist_id (FK), song_id (FK, nullable), play_count, source_namespace, source_id, last_updated_at
+
+### Staging Tables (Atomic Bulk ETL Buffers)
+- `staging_users`, `staging_artists`, `staging_songs`, `staging_listening_history`, `staging_aggregated_counts`
 
 ### Key Relationships
 - songs → artists (M:1), songs → genres (M:1)
@@ -36,12 +40,18 @@ A DBMS capstone project for recommending songs based on user preferences and lis
 - listening_history → users + songs
 - ratings → users + songs (unique constraint)
 - user_preferences → users + genres
+- aggregated_listening_counts → users (optional) + artists + songs (optional)
 
-### Advanced DB Features
-- **Views**: top_songs_view, user_analytics_view, genre_popularity_view
+### Advanced DB Features & Migrations
+- **Migrations**: `Backend/db/migrations/001_adapt_schema.sql` (automated via `npm run migrate`)
+- **Views**: top_songs_view, user_analytics_view, genre_popularity_view (combines listening_history + aggregated_listening_counts)
 - **Stored Procedures**: sp_get_recommendations, sp_update_preferences
 - **Triggers**: after_listen_update_preferences, after_rating_update_preferences
-- **Indexes**: on foreign keys, listening_history(listened_at), ratings(user_id, song_id)
+- **Indexes**:
+  - Search: songs(title), artists(name), genres(name)
+  - Joins: songs(artist_id, genre_id), listening_history(user_id, song_id), ratings(user_id, song_id), playlists(user_id), playlist_songs(playlist_id, song_id), user_preferences(user_id, genre_id)
+  - Filtering & Analytics: listening_history(listened_at, user_id, song_id), songs(release_date), aggregated_listening_counts(user_id, artist_id, song_id)
+  - Source tracking: users(source_namespace, source_id), artists(source_namespace, source_id), songs(source_namespace, source_id), listening_history(source_namespace, source_id)
 
 ## 5. Core Features
 
@@ -143,10 +153,16 @@ A DBMS capstone project for recommending songs based on user preferences and lis
 - **Extract**: Generator-based streaming parser supporting Last.fm 1K TSV structures (`userid-profile.tsv` and `userid-timestamp-artid-artname-traid-traname.tsv`). Memory-bounded chunked execution for multi-gigabyte scale.
 - **Validate**: Checks column structures, mandatory fields (`user_id`, `timestamp`, artist/track identities), and numeric ranges (age 5–120). Logs malformed records to `rejected_records.jsonl`.
 - **Clean**: Unicode NFKC normalization, whitespace sanitization, sentinel null handling, date/timestamp canonicalization, multi-artist parsing (`feat.`, `&`, `vs.`), and title cleaning without destroying version tags.
-- **Transform**: Maps raw records to `UserEntity`, `ArtistEntity`, `SongEntity`, and `ScrobbleEntity`, inferring taxonomy genres and preserving source provenance.
-- **Deduplicate**: Documented matching rules. Songs are scoped strictly to their artist; different songs with matching titles are never merged. Destructive fuzzy deduplication is avoided. Scrobbles deduplicated on `(user_id, timestamp, song_id)`.
-- **Load**: Tri-target loading into Cleaned Intermediate Layer (`data/cleaned/*.jsonl`), Relational Databases (SQLite / MySQL), and Backend JSON Bridge.
-- **Verify**: Post-load automated audits for referential integrity, uniqueness, and absence of hallucinated placeholders.
+- **Transform**: Maps raw records to `UserEntity`, `ArtistEntity`, `SongEntity`, `ScrobbleEntity`, and `AggregatedPlayEntity`, inferring taxonomy genres, assigning source namespaces, and preserving source provenance.
+- **Deduplicate**: Documented matching rules. Songs are scoped strictly to their artist; different songs with matching titles are never merged. Destructive fuzzy deduplication is avoided. Scrobbles deduplicated on `(user_id, timestamp, song_id)`. Deduplication engine primes existing database IDs to guarantee primary key and foreign key preservation.
+- **Load (Staging, Repeatable Upsert & Rollback)**:
+  - **Staging Isolation**: Incoming bulk datasets are staged into dedicated staging tables (`staging_users`, `staging_artists`, `staging_songs`, `staging_listening_history`, `staging_aggregated_counts`).
+  - **Pre-Merge Validation**: Schema integrity checks are executed against staging buffers before any production records are modified.
+  - **Atomic Transaction & Rollback Strategy**: Data is merged from staging into production tables within an atomic database transaction. Any failure triggers an immediate `ROLLBACK`, leaving production data uncorrupted.
+  - **Repeatable Upserts**: Re-running imports does not create duplicate users, artists, songs, or scrobble rows.
+  - **Aggregated Play Counts**: Pre-aggregated datasets are stored in `aggregated_listening_counts` without fabricating fake timestamps, fake users, synthetic completion rates, or fake sessions.
+  - **Account & History Preservation**: Pre-existing user accounts, preferences, ratings, and legitimate user-generated listening history (`source_namespace = 'local'`) are strictly preserved.
+- **Verify**: Post-load automated audits for referential integrity, uniqueness, source namespace completeness, index provisioning, staging buffers, and absence of hallucinated placeholders.
 
 ## 10. Future Scope
 - Spotify / Last.fm live streaming API integration

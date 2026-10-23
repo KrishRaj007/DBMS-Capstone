@@ -142,23 +142,7 @@ async function seed() {
   });
 
   try {
-    console.log('🌱 Seeding database...\n');
-
-    // Clear existing data (reverse FK order)
-    await conn.query(`
-      SET FOREIGN_KEY_CHECKS = 0;
-      TRUNCATE TABLE user_preferences;
-      TRUNCATE TABLE ratings;
-      TRUNCATE TABLE listening_history;
-      TRUNCATE TABLE playlist_songs;
-      TRUNCATE TABLE playlists;
-      TRUNCATE TABLE songs;
-      TRUNCATE TABLE artists;
-      TRUNCATE TABLE genres;
-      TRUNCATE TABLE users;
-      SET FOREIGN_KEY_CHECKS = 1;
-    `);
-    console.log('✓ Cleared existing data');
+    console.log('🌱 Seeding database (preserving existing user records and application relationships)...\n');
 
     // Genres
     for (const g of GENRES) {

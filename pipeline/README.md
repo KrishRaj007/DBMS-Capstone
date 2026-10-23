@@ -38,6 +38,7 @@ flowchart LR
    - Converts validated records into typed domain entities: `UserEntity`, `ArtistEntity`, `GenreEntity`, `SongEntity`, and `ScrobbleEntity`.
    - Assigns deterministic genre mappings based on artist keywords and standard taxonomy.
    - Attaches provenance metadata (`source_system`, `source_file`, `source_line`, `extracted_at`) to every entity.
+   - Generates deterministic `source_id` hashes (MD5 of MBID or canonical key) per entity to prevent ID collisions across multiple imports.
 
 5. **Deduplicate (`deduplicate.py`)**:
    - **Users**: Deduplicated strictly by `user_id`.
@@ -47,17 +48,32 @@ flowchart LR
      - **Strict Rule**: Avoids destructive fuzzy deduplication.
      - Matching Key: `(artist_id, track_mbid)` or `(artist_id, normalized_lowercase_title)`.
    - **Scrobbles**: Deduplicated by `(user_id, timestamp, song_id)`. Exact duplicate listening timestamps are skipped.
+   - **Priming**: On re-run, the engine primes itself from the existing database to preserve existing primary keys, foreign keys, and to avoid re-inserting already-loaded scrobbles.
 
 6. **Load (`load.py`)**:
    - **Cleaned Intermediate Layer (`data/cleaned/`)**: Staged partitioned JSONL files (`users.jsonl`, `artists.jsonl`, `genres.jsonl`, `songs.jsonl`, `listening_history.jsonl`, `rejected_records.jsonl`, `pipeline_metrics.json`).
+   - **Staging Tables**: All incoming data is first written to isolated `staging_*` tables before any merge, guaranteeing atomic, rollback-capable transactions.
+   - **Schema Adaptation**: `adapt_sqlite_schema()` non-destructively adds missing columns (`source_namespace`, `source_id`, `mbid`, etc.) without dropping or truncating any existing table.
+   - **Repeatable Upserts**: Artists and songs are matched by source ID, MBID, or normalized name before inserting. Existing PKs are never changed; only missing metadata is enriched.
+   - **User Data Preservation**: Existing user accounts, passwords, ratings, playlists, and preferences are never overwritten or deleted.
+   - **Aggregated Counts**: Stores pre-aggregated play counts in `aggregated_listening_counts` without fabricating timestamps, fake sessions, or user identities.
    - **Relational Database Layer**: Populates SQLite (`data/music_analytics.sqlite`) with tables, views, and indexes matching `Backend/db/schema.sql`, and batch loads into MySQL via `pymysql` when credentials are active.
    - **Backend JSON Bridge (`Backend/db/importedData.json`)**: Synchronizes imported data with the Express backend mock store for instant frontend interactivity.
 
 7. **Verify (`verify.py`)**:
-   - Automated post-load referential integrity check (zero orphan songs or scrobbles).
-   - Uniqueness check (zero duplicate user emails, duplicate artist MBIDs, or duplicate scrobbles).
-   - Missing metadata audit (confirms true `NULL`s instead of invented placeholder strings like `"Unknown"` or `"1970-01-01"`).
+   - 12-point automated post-load integrity audit.
    - Generates a tabular verification report and quality score.
+
+---
+
+## 🔒 Idempotency & Safety Guarantees
+
+- **Re-running the pipeline is safe**: The deduplication engine primes from the existing database on every run. Records already in the database are matched and enriched — not duplicated.
+- **Atomic transactions**: All database writes happen inside a single `BEGIN TRANSACTION` / `COMMIT`. Any error triggers a full `ROLLBACK`, leaving the database unchanged.
+- **No destructive operations**: No `TRUNCATE`, `DROP TABLE`, or `DELETE FROM` is issued against production tables during a pipeline run.
+- **No hallucinated values**: `album`, `duration_seconds`, `release_date` are stored as `NULL` when not present in the source data. No placeholder values are invented.
+- **Source identifiers**: Every imported entity carries `source_namespace='lastfm'` and a deterministic `source_id` (MBID or MD5 hash of canonical key) to prevent collisions across imports from different systems.
+- **Aggregated play counts**: When the source dataset contains aggregate play counts (no individual timestamps), they are stored in `aggregated_listening_counts`, not synthesized into fake listening events.
 
 ---
 
@@ -67,7 +83,7 @@ flowchart LR
 |---|---|---|
 | **Raw Source Data** | `lastfm-dataset-1K/` | Original immutable Last.fm TSV files. Read-only. |
 | **Cleaned Intermediate** | `data/cleaned/` | Validated, normalized, deduplicated JSONL files with provenance. |
-| **Relational Database** | `data/music_analytics.sqlite` / MySQL | Fully indexed relational tables, foreign keys, and analytical views. |
+| **Relational Database** | `data/music_analytics.sqlite` / MySQL | Fully indexed relational tables, foreign keys, staging buffers, and analytical views. |
 
 ---
 
@@ -75,27 +91,32 @@ flowchart LR
 
 ### Basic Execution (Standard Dev Limit: 50,000 scrobbles)
 ```bash
-python pipeline/run.py --limit 50000
+python -m pipeline.run --limit 50000
+```
+
+### Incremental Load (Extend to 100K; already-loaded rows are skipped)
+```bash
+python -m pipeline.run --limit 100000
 ```
 
 ### Full Dataset Processing (All 19.1M rows)
 ```bash
-python pipeline/run.py --limit 0 --chunk-size 50000
+python -m pipeline.run --limit 0 --chunk-size 50000
 ```
 
-### Export Intermediate Cleaned Files Only
+### Export Intermediate Cleaned Files Only (No DB writes)
 ```bash
-python pipeline/run.py --limit 100000 --export-cleaned-only
+python -m pipeline.run --limit 100000 --export-cleaned-only
 ```
 
 ### Run Verification Checks Only
 ```bash
-python pipeline/run.py --verify-only
+python -m pipeline.run --verify-only
 ```
 
 ---
 
-## 📊 Verification Metrics Example
+## 📊 Verification Metrics (12-Point Audit)
 
 ```
 [Stage 7] Running Automated Post-Load Verification & Audit...
@@ -107,6 +128,10 @@ python pipeline/run.py --verify-only
   [✅ PASS] UNIQUENESS_ARTIST_MBIDS: Duplicate artist MBIDs: 0
   [✅ PASS] NO_HALLUCINATED_PLACEHOLDERS: Hallucinated song titles: 0, placeholder artists: 0
   [✅ PASS] ANALYTICS_VIEWS_OPERATIONAL: Top songs view returned 10196 rows, Genre view returned 10 rows
+  [✅ PASS] SOURCE_NAMESPACES_PRESERVED: Missing source namespaces: users=0, artists=0, songs=0
+  [✅ PASS] INDEXES_PROVISIONED: Active indexes: 29, missing required: []
+  [✅ PASS] STAGING_BUFFERS_READY: Active staging tables: ['staging_users', 'staging_artists', 'staging_songs', 'staging_listening_history', 'staging_aggregated_counts']
+  [✅ PASS] AGGREGATED_COUNTS_STORAGE_READY: Aggregated listening counts table verified for non-fabricated play counts
 
   🎯 Data Pipeline Quality Score: 100.0%
 ```
