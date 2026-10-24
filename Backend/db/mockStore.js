@@ -392,7 +392,7 @@ async function executeMockQuery(sql, params = []) {
   }
 
   // 11. Listening: User history list
-  if (norm.includes('from listening_history lh') && norm.includes('where lh.user_id = ?')) {
+  if (norm.includes('from listening_history lh') && norm.includes('where lh.user_id = ?') && !norm.includes('group by')) {
     const [userId, limit = 30, offset = 0] = params;
     const userListens = LISTENING_HISTORY.filter(lh => lh.user_id === userId)
       .sort((a, b) => new Date(b.listened_at) - new Date(a.listened_at))
@@ -662,7 +662,7 @@ async function executeMockQuery(sql, params = []) {
   }
 
   // 27. Analytics: Personal top songs
-  if (norm.includes('group by s.id, s.title, a.name')) {
+  if (norm.includes('group by s.id, s.title, a.name') && norm.includes('from listening_history')) {
     const [userId] = params;
     const uListens = LISTENING_HISTORY.filter(lh => lh.user_id === userId);
     const counts = {};
@@ -763,6 +763,37 @@ async function executeMockQuery(sql, params = []) {
       const count = LISTENING_HISTORY.filter(lh => lh.user_id === u.id).length;
       return { id: u.id, username: u.username, total_listens: count };
     }).sort((a, b) => b.total_listens - a.total_listens);
+    return [rows];
+  }
+
+  // 34. Analytics: Global top rated songs
+  if (norm.includes('having count(r.id)') || (norm.includes('avg(r.rating) as avg_rating') && norm.includes('from ratings r'))) {
+    const ratingGroups = {};
+    for (const r of RATINGS) {
+      if (!ratingGroups[r.song_id]) ratingGroups[r.song_id] = [];
+      ratingGroups[r.song_id].push(r.rating);
+    }
+    let entries = Object.entries(ratingGroups).filter(([_, arr]) => arr.length >= 2);
+    if (entries.length === 0) {
+      entries = Object.entries(ratingGroups);
+    }
+    const rows = entries
+      .map(([songId, arr]) => {
+        const s = SONGS.find(s => s.id === parseInt(songId)) || {};
+        const a = ARTISTS.find(a => a.id === s.artist_id) || {};
+        const g = GENRES.find(g => g.id === s.genre_id) || {};
+        const avg = arr.reduce((sum, v) => sum + v, 0) / arr.length;
+        return {
+          id: s.id,
+          title: s.title || `Track #${songId}`,
+          artist_name: a.name || 'Various Artists',
+          genre_name: g.name || 'General',
+          avg_rating: avg,
+          rating_count: arr.length,
+        };
+      })
+      .sort((a, b) => b.avg_rating - a.avg_rating || b.rating_count - a.rating_count)
+      .slice(0, 10);
     return [rows];
   }
 

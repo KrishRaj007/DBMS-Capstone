@@ -11,23 +11,27 @@ export default function Analytics() {
   const [personal, setPersonal] = useState(null);
   const [global, setGlobal] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [personalRes, globalRes] = await Promise.all([
+        API.get('/analytics/personal').catch(() => ({ data: null })),
+        API.get('/analytics/global'),
+      ]);
+      setPersonal(personalRes.data);
+      setGlobal(globalRes.data);
+    } catch (err) {
+      console.error('Failed to load analytics:', err);
+      setError('Unable to aggregate listening telemetry from the database. Please verify your connection.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        setLoading(true);
-        const [personalRes, globalRes] = await Promise.all([
-          API.get('/analytics/personal').catch(() => ({ data: null })),
-          API.get('/analytics/global'),
-        ]);
-        setPersonal(personalRes.data);
-        setGlobal(globalRes.data);
-      } catch (err) {
-        console.error('Failed to load analytics:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAnalytics();
   }, []);
 
@@ -35,6 +39,21 @@ export default function Analytics() {
     return (
       <div className="page-container" id="main-content">
         <LoadingSpinner message="Aggregating listening telemetry and computing SQL group-by metrics..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-container" id="main-content">
+        <div className="card" style={{ textAlign: 'center', padding: '48px 24px', maxWidth: '600px', margin: '40px auto' }}>
+          <div style={{ color: 'var(--danger)', fontSize: '2rem', marginBottom: '12px' }}>⚠️</div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '8px' }}>Analytics Query Error</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '24px' }}>{error}</p>
+          <button onClick={fetchAnalytics} className="btn btn-primary btn-sm">
+            ↻ Retry Telemetry Query
+          </button>
+        </div>
       </div>
     );
   }
@@ -193,17 +212,17 @@ export default function Analytics() {
             </div>
           )}
 
-          {/* Top Genres & Top Songs Tables */}
-          <div className="grid-cols-2">
+          {/* Top Genres, Top Artists & Top Songs Tables */}
+          <div className="grid-cols-3">
             <div className="card">
               <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '14px' }}>
                 Top Preferred Genres
               </h3>
-              {personal?.topGenres?.length === 0 ? (
+              {!personal?.topGenres || personal.topGenres.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No genre activity logged yet.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {personal?.topGenres?.map((g, i) => (
+                  {personal.topGenres.map((g, i) => (
                     <div
                       key={`genre-${g.name}-${i}`}
                       style={{
@@ -229,13 +248,45 @@ export default function Analytics() {
 
             <div className="card">
               <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '14px' }}>
+                Top Listened Artists
+              </h3>
+              {!personal?.topArtists || personal.topArtists.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No artist activity logged yet.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {personal.topArtists.map((a, i) => (
+                    <div
+                      key={`artist-${a.name}-${i}`}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 12px',
+                        backgroundColor: 'var(--bg)',
+                        borderRadius: 'var(--radius)',
+                      }}
+                    >
+                      <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>
+                        {i + 1}. {a.name}
+                      </span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
+                        {a.listens} plays
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="card">
+              <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '14px' }}>
                 Your Most Repeated Songs
               </h3>
-              {personal?.topSongs?.length === 0 ? (
+              {!personal?.topSongs || personal.topSongs.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No play activity logged yet.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {personal?.topSongs?.map((s, i) => (
+                  {personal.topSongs.map((s, i) => (
                     <div
                       key={`song-${s.id}-${i}`}
                       style={{
@@ -255,7 +306,7 @@ export default function Analytics() {
                           {s.artist_name}
                         </div>
                       </div>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--primary)', flexShrink: 0 }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--secondary)', flexShrink: 0 }}>
                         {s.listens} plays
                       </span>
                     </div>
@@ -294,66 +345,156 @@ export default function Analytics() {
               <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '14px' }}>
                 🔥 Most Played Songs (from <code style={{ color: 'var(--primary)' }}>top_songs_view</code>)
               </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {global?.mostPlayed?.map((song, i) => (
-                  <div
-                    key={song.id}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '8px 12px',
-                      backgroundColor: 'var(--bg)',
-                      borderRadius: 'var(--radius)',
-                    }}
-                  >
-                    <div>
-                      <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>
-                        {i + 1}. {song.title}
-                      </span>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {song.artist_name} • {song.genre_name}
+              {!global?.mostPlayed || global.mostPlayed.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No song play history recorded yet.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {global.mostPlayed.map((song, i) => (
+                    <div
+                      key={song.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 12px',
+                        backgroundColor: 'var(--bg)',
+                        borderRadius: 'var(--radius)',
+                      }}
+                    >
+                      <div>
+                        <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>
+                          {i + 1}. {song.title}
+                        </span>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          {song.artist_name} • {song.genre_name}
+                        </div>
                       </div>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
+                        {song.play_count} plays
+                      </span>
                     </div>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
-                      {song.play_count} plays
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="card">
               <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '14px' }}>
                 📊 Genre Popularity (from <code style={{ color: 'var(--secondary)' }}>genre_popularity_view</code>)
               </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {global?.genrePopularity?.map((g, i) => (
-                  <div
-                    key={g.id}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '8px 12px',
-                      backgroundColor: 'var(--bg)',
-                      borderRadius: 'var(--radius)',
-                    }}
-                  >
-                    <div>
-                      <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>
-                        {i + 1}. {g.name}
+              {!global?.genrePopularity || global.genrePopularity.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No genre popularity data recorded yet.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {global.genrePopularity.map((g, i) => (
+                    <div
+                      key={g.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 12px',
+                        backgroundColor: 'var(--bg)',
+                        borderRadius: 'var(--radius)',
+                      }}
+                    >
+                      <div>
+                        <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>
+                          {i + 1}. {g.name}
+                        </span>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          {g.song_count} songs • {Number(g.avg_rating || 0).toFixed(1)} ★ avg
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--secondary)' }}>
+                        {g.total_plays || 0} plays
                       </span>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {g.song_count} songs • {Number(g.avg_rating || 0).toFixed(1)} ★ avg
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Global Top Rated Songs & Active Listeners */}
+          <div className="grid-cols-2" style={{ marginBottom: '24px' }}>
+            <div className="card">
+              <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '14px' }}>
+                ⭐ Highest Rated Songs (from <code style={{ color: 'var(--secondary)' }}>ratings</code>)
+              </h3>
+              {!global?.topRated || global.topRated.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No rated songs found in catalog.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {global.topRated.map((song, i) => (
+                    <div
+                      key={`rated-${song.id}-${i}`}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 12px',
+                        backgroundColor: 'var(--bg)',
+                        borderRadius: 'var(--radius)',
+                      }}
+                    >
+                      <div style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>
+                          {i + 1}. {song.title}
+                        </span>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          {song.artist_name} • {song.genre_name}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '12px' }}>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--secondary)', fontWeight: '600' }}>
+                          {Number(song.avg_rating || 0).toFixed(1)} ★
+                        </span>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                          {song.rating_count} {song.rating_count === 1 ? 'rating' : 'ratings'}
+                        </div>
                       </div>
                     </div>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--secondary)' }}>
-                      {g.total_plays || 0} plays
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="card">
+              <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '14px' }}>
+                🏆 Most Active Listeners (by log frequency)
+              </h3>
+              {!global?.activeUsers || global.activeUsers.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No active listener history found.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {global.activeUsers.map((u, i) => (
+                    <div
+                      key={`user-${u.id}-${i}`}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 12px',
+                        backgroundColor: 'var(--bg)',
+                        borderRadius: 'var(--radius)',
+                      }}
+                    >
+                      <div>
+                        <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>
+                          #{i + 1} {u.username}
+                        </span>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          Registered Account #{u.id}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
+                        {u.total_listens} plays
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

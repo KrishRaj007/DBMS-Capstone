@@ -270,7 +270,12 @@ export function ConfirmModal({ isOpen, title, message, confirmText = 'Confirm', 
 
 // ── 18. Last Updated Date ────────────────────────────────────
 export function LastUpdatedDate() {
-  const lastUpdated = "October 20, 2026";
+  // Show today's actual date — no hardcoded values
+  const lastUpdated = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
   return (
     <div className="last-updated-text">
       <span>Database Schema v1.0 • Last updated: {lastUpdated}</span>

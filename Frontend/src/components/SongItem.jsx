@@ -8,7 +8,7 @@ export default function SongItem({ song, onPlaySuccess, onRateSuccess, playlists
   const { user } = useAuth();
   const { success, error } = useToast();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [rating, setRating] = useState(Math.round(song.avg_rating || 0));
+  const [rating, setRating] = useState(0); // 0 = user has not rated yet (personal rating unknown)
   const [showPlaylistSelect, setShowPlaylistSelect] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState('');
 
