@@ -74,13 +74,40 @@ A DBMS capstone project for recommending songs based on user preferences and lis
 - Add/remove songs, reorder
 - Public/private toggle
 
-### 5.5 Recommendations
-- Based on: top-rated genres, frequently listened artists, collaborative filtering (users with similar tastes)
-- SQL-driven recommendation engine
+### 5.5 Recommendations Engine
+- **Multi-Strategy Adaptive Engine**:
+  1. **Popularity & Diversity Baseline (`popularity_baseline`)**:
+     - Handles cold-start users gracefully when user-level interaction data is unavailable.
+     - Computes ground-truth catalog engagement: $\text{score} = \ln(1 + \text{plays}) + (\text{avg\_rating} \times \frac{\text{rating\_count}}{\text{rating\_count} + 2})$.
+     - Never fabricates dummy ratings; songs with 0 ratings receive 0 rating bonus rather than dummy defaults.
+     - Transparently labeled as non-personalized platform baseline (`is_personalized: false`).
+     - Ensures catalog diversity via round-robin genre distribution and per-artist track limits (max 2 per artist).
+  2. **Content-Based Recommendations (`content_based`)**:
+     - Activated only when relevant user features exist (user has $\ge 1$ interaction with known artist or genre).
+     - Computes user affinity profiles over `artist_id` and `genre_id` weighted by listen counts and ratings $\ge 3$.
+     - Candidate tracks scored: $\text{score} = 3.5 \times \text{ArtistAffinity} + 1.8 \times \text{GenreAffinity} + \ln(1 + \text{plays}) + \text{RatingBonus}$.
+     - Attaches personalized rationale per item (e.g. "Because you enjoy [Artist Name]").
+  3. **Collaborative Filtering (`collaborative_filtering`)**:
+     - Activated only when appropriate interaction data exists (target user has $\ge 2$ interactions AND shared overlap $\ge 1$ with peer listeners).
+     - User-User Jaccard similarity: $\text{Sim}(u, v) = \frac{|\text{Songs}(u) \cap \text{Songs}(v)|}{|\text{Songs}(u) \cup \text{Songs}(v)|}$.
+     - Candidate songs liked by similar peers scored by $\sum_{v} \text{Sim}(u, v) \times \text{Weight}(v, s)$.
+     - Attaches collaborative rationale ("Recommended by listeners with overlapping taste").
+  4. **Repeated Track Prevention**:
+     - Tracks already in the user's listening history or rating log are strictly excluded.
+     - Strict deduplication by `song.id` and canonical `artist_id::normalized_title` ensures the same song never appears repeatedly in recommendations.
 
-### 5.6 Analytics Dashboard
-- **Personal**: total listening time, top genres, top artists, listening heatmap (time of day/week)
-- **Global**: most played songs, trending genres, top-rated songs, active users
+### 5.6 Analytics & Telemetry
+- **Provenance & Aggregation Tiers**:
+  - **Live Application Activity (`source_namespace: 'local'`)**: Granular individual session logs with timestamps and duration. Star ratings (1-5) submitted exclusively by application users.
+  - **Imported Last.fm Dataset (`source_namespace: 'lastfm'`)**: Historical listener profiles and scrobbles ingested via ETL pipeline.
+  - **Pre-Aggregated Catalog Counts (`source_namespace: 'dataset'`)**: Coarse frequency totals from `aggregated_listening_counts` without synthetic timestamps or fabricated sessions.
+- **Personal Analytics**: Reflects logged-in user's granular session history (`listening_history`, `ratings`). Computes real duration sums, actual given rating averages, hourly distribution, day-of-week heatmaps, and daily activity trends without synthetic multipliers.
+- **Global Analytics**:
+  - Separate breakdown of registered application users (`local`) vs imported listener profiles (`lastfm`).
+  - Separate breakdown of live application sessions (`local`), historical scrobbles (`lastfm`), and pre-aggregated counts (`dataset`).
+  - Most played songs combining granular and coarse sources via `top_songs_view`.
+  - Top rated songs restricted to verified user ratings with real averages and rating counts.
+  - Active users badged with their account provenance.
 
 ## 6. Pages
 1. Landing / Login / Register

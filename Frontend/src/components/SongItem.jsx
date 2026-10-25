@@ -99,6 +99,11 @@ export default function SongItem({ song, onPlaySuccess, onRateSuccess, playlists
           <div className="song-subtitle-text">
             <span>{song.artist_name || 'Unknown Artist'}</span>
             {song.album && <span> • {song.album}</span>}
+            {song.recommendation_reason && (
+              <span style={{ color: 'var(--secondary)', marginLeft: '6px', fontSize: '0.75rem' }}>
+                • {song.recommendation_reason}
+              </span>
+            )}
           </div>
         </div>
       </div>

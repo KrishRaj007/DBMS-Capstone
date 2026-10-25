@@ -9,6 +9,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
+  const [recMeta, setRecMeta] = useState({
+    isPersonalized: false,
+    strategy: 'popularity_baseline',
+    explanation: 'Platform catalog baseline',
+    userState: 'cold_start',
+  });
   const [history, setHistory] = useState([]);
   const [playlists, setPlaylists] = useState([]);
 
@@ -23,7 +29,19 @@ export default function Dashboard() {
       ]);
 
       setStats(analyticsRes.data.overview || {});
-      setRecommendations(recRes.data || []);
+
+      const recData = recRes.data;
+      const recItems = Array.isArray(recData) ? recData : (recData?.recommendations || []);
+      setRecommendations(recItems);
+      setRecMeta({
+        isPersonalized: Boolean(recData?.is_personalized ?? recItems.some(r => r.is_personalized)),
+        strategy: recData?.strategy ?? recItems[0]?.strategy ?? 'popularity_baseline',
+        explanation: recData?.explanation ?? (recItems[0]?.is_personalized
+          ? 'Personalized based on your musical taste'
+          : 'Platform catalog baseline for new listeners'),
+        userState: recData?.user_state ?? (recItems.some(r => r.is_personalized) ? 'active' : 'cold_start'),
+      });
+
       setHistory(historyRes.data.history || []);
       setPlaylists(playlistRes.data || []);
     } catch (err) {
@@ -56,7 +74,9 @@ export default function Dashboard() {
         <div>
           <h1 className="page-title">Welcome back, {user?.username}</h1>
           <p className="page-subtitle">
-            Here is your live listening activity and personalized algorithmic recommendations.
+            {recMeta.isPersonalized
+              ? 'Here is your live listening activity and personalized algorithmic recommendations.'
+              : 'Here is your live listening activity and platform discovery recommendations.'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -91,15 +111,32 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recommended For You Section (Stored Procedure sp_get_recommendations) */}
+      {/* Recommended For You Section */}
       <section style={{ marginBottom: '36px' }}>
         <div className="page-header" style={{ marginBottom: '16px' }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>
-              ✨ Recommended For You
-            </h2>
-            <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)' }}>
-              Calculated via MySQL stored procedure <code style={{ color: 'var(--primary)' }}>sp_get_recommendations</code> based on genre weights & star ratings
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>
+                {recMeta.isPersonalized ? '✨ Recommended For You' : '🎧 Catalog Recommendations'}
+              </h2>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '3px 10px',
+                  borderRadius: '8px',
+                  backgroundColor: recMeta.isPersonalized ? 'rgba(228, 160, 160, 0.15)' : 'rgba(238, 217, 160, 0.15)',
+                  color: recMeta.isPersonalized ? 'var(--primary)' : 'var(--secondary)',
+                  fontWeight: '600',
+                  border: `1px solid ${recMeta.isPersonalized ? 'var(--primary)' : 'var(--secondary)'}`,
+                }}
+              >
+                {recMeta.strategy === 'collaborative_filtering' && 'Collaborative Filtering (Peer Tastes)'}
+                {recMeta.strategy === 'content_based' && 'Content-Based (Artist & Genre Affinity)'}
+                {recMeta.strategy === 'popularity_baseline' && (recMeta.userState === 'cold_start' ? 'Platform Baseline (Cold Start)' : 'Catalog Popularity Baseline')}
+              </span>
+            </div>
+            <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+              {recMeta.explanation}
             </p>
           </div>
           <button
@@ -110,6 +147,32 @@ export default function Dashboard() {
             ↻ Refresh Engine
           </button>
         </div>
+
+        {/* Cold Start Notice Banner — transparent and truthful */}
+        {!recMeta.isPersonalized && (
+          <div
+            style={{
+              backgroundColor: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: '0.85rem',
+              color: 'var(--text-muted)',
+              gap: '12px',
+            }}
+          >
+            <span>
+              ℹ️ <strong>New Listener Baseline:</strong> Recommendations are not marked as personalized because you do not have enough listening or rating history yet. These are platform-wide trending tracks across diverse genres. Rate or play tracks in the library to unlock personalized recommendations!
+            </span>
+            <Link to="/library" className="btn btn-secondary btn-sm" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
+              Explore Library →
+            </Link>
+          </div>
+        )}
 
         {recommendations.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '32px' }}>

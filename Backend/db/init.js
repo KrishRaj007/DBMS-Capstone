@@ -511,29 +511,79 @@ async function initializeDatabase() {
         IN p_limit INT
       )
       BEGIN
-        SELECT DISTINCT
-          s.id, s.title, s.album, s.duration_seconds, s.cover_url, s.release_date,
-          a.name AS artist_name, a.id AS artist_id,
-          g.name AS genre_name, g.id AS genre_id,
-          COALESCE(play_stats.play_count, 0) AS play_count,
-          COALESCE(rate_stats.avg_rating, 0) AS avg_rating,
-          COALESCE(up.preference_weight, 0)  AS genre_weight,
-          (COALESCE(up.preference_weight, 0) * 2 + COALESCE(rate_stats.avg_rating, 0) + LOG(1 + COALESCE(play_stats.play_count, 0))) AS score
-        FROM songs s
-          JOIN artists a ON s.artist_id = a.id
-          JOIN genres  g ON s.genre_id  = g.id
-          LEFT JOIN user_preferences up ON s.genre_id = up.genre_id AND up.user_id = p_user_id
-          LEFT JOIN (
-            SELECT song_id, COUNT(*) AS play_count FROM listening_history GROUP BY song_id
-          ) play_stats ON s.id = play_stats.song_id
-          LEFT JOIN (
-            SELECT song_id, AVG(rating) AS avg_rating FROM ratings GROUP BY song_id
-          ) rate_stats ON s.id = rate_stats.song_id
-        WHERE s.id NOT IN (
-          SELECT song_id FROM listening_history WHERE user_id = p_user_id GROUP BY song_id HAVING COUNT(*) > 5
-        )
-        ORDER BY score DESC
-        LIMIT p_limit;
+        DECLARE v_user_activity INT DEFAULT 0;
+
+        SELECT (
+          (SELECT COUNT(*) FROM listening_history WHERE user_id = p_user_id) +
+          (SELECT COUNT(*) FROM ratings WHERE user_id = p_user_id)
+        ) INTO v_user_activity;
+
+        IF v_user_activity = 0 THEN
+          SELECT
+            s.id, s.title, s.album, s.duration_seconds, s.cover_url, s.release_date,
+            a.name AS artist_name, a.id AS artist_id,
+            g.name AS genre_name, g.id AS genre_id,
+            COALESCE(play_stats.play_count, 0) AS play_count,
+            COALESCE(rate_stats.avg_rating, 0) AS avg_rating,
+            COALESCE(rate_stats.rating_count, 0) AS rating_count,
+            CONCAT('Trending track in ', g.name) AS recommendation_reason,
+            'popularity_baseline' AS strategy,
+            FALSE AS is_personalized,
+            (LOG(1 + COALESCE(play_stats.play_count, 0)) +
+             CASE WHEN COALESCE(rate_stats.rating_count, 0) > 0
+                  THEN (rate_stats.avg_rating * (rate_stats.rating_count / (rate_stats.rating_count + 2)))
+                  ELSE 0 END
+            ) AS score
+          FROM songs s
+            JOIN artists a ON s.artist_id = a.id
+            JOIN genres  g ON s.genre_id  = g.id
+            LEFT JOIN (
+              SELECT song_id, COUNT(*) AS play_count FROM listening_history GROUP BY song_id
+            ) play_stats ON s.id = play_stats.song_id
+            LEFT JOIN (
+              SELECT song_id, AVG(rating) AS avg_rating, COUNT(*) AS rating_count FROM ratings GROUP BY song_id
+            ) rate_stats ON s.id = rate_stats.song_id
+          WHERE s.id NOT IN (
+            SELECT song_id FROM listening_history WHERE user_id = p_user_id
+          )
+          ORDER BY score DESC
+          LIMIT p_limit;
+        ELSE
+          SELECT
+            s.id, s.title, s.album, s.duration_seconds, s.cover_url, s.release_date,
+            a.name AS artist_name, a.id AS artist_id,
+            g.name AS genre_name, g.id AS genre_id,
+            COALESCE(play_stats.play_count, 0) AS play_count,
+            COALESCE(rate_stats.avg_rating, 0) AS avg_rating,
+            COALESCE(rate_stats.rating_count, 0) AS rating_count,
+            CASE
+              WHEN up.preference_weight > 0 THEN CONCAT('Matches your taste in ', g.name)
+              ELSE CONCAT('Recommended discovery in ', g.name)
+            END AS recommendation_reason,
+            'content_based' AS strategy,
+            TRUE AS is_personalized,
+            (COALESCE(up.preference_weight, 0) * 2.5
+             + LOG(1 + COALESCE(play_stats.play_count, 0))
+             + CASE WHEN COALESCE(rate_stats.rating_count, 0) > 0
+                    THEN (rate_stats.avg_rating * (rate_stats.rating_count / (rate_stats.rating_count + 2)))
+                    ELSE 0 END
+            ) AS score
+          FROM songs s
+            JOIN artists a ON s.artist_id = a.id
+            JOIN genres  g ON s.genre_id  = g.id
+            LEFT JOIN user_preferences up ON s.genre_id = up.genre_id AND up.user_id = p_user_id
+            LEFT JOIN (
+              SELECT song_id, COUNT(*) AS play_count FROM listening_history GROUP BY song_id
+            ) play_stats ON s.id = play_stats.song_id
+            LEFT JOIN (
+              SELECT song_id, AVG(rating) AS avg_rating, COUNT(*) AS rating_count FROM ratings GROUP BY song_id
+            ) rate_stats ON s.id = rate_stats.song_id
+          WHERE s.id NOT IN (
+            SELECT song_id FROM listening_history WHERE user_id = p_user_id
+          )
+          ORDER BY score DESC
+          LIMIT p_limit;
+        END IF;
       END
     `);
 

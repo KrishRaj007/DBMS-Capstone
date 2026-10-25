@@ -126,6 +126,29 @@ export default function Analytics() {
 
       {activeTab === 'personal' ? (
         <div>
+          {/* Provenance Banner for Personal Telemetry */}
+          <div
+            style={{
+              backgroundColor: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: '8px',
+              padding: '10px 14px',
+              marginBottom: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: '0.825rem',
+              color: 'var(--text-muted)',
+            }}
+          >
+            <span>
+              🔒 <strong>Personal Telemetry Source:</strong> Granular application session history (<code style={{ color: 'var(--primary)' }}>source_namespace: local</code>). Every listen reflects real playback duration and timestamps.
+            </span>
+            <span style={{ color: 'var(--secondary)', fontWeight: '600' }}>
+              Individual Session Events
+            </span>
+          </div>
+
           {/* KPI Metrics */}
           <div className="grid-cols-4" style={{ marginBottom: '24px' }}>
             <div className="stat-box">
@@ -140,7 +163,7 @@ export default function Analytics() {
               <div className="stat-box-value">
                 {Math.floor((personal?.overview?.total_listen_seconds || 0) / 60)}m
               </div>
-              <div className="stat-box-label">Listening Minutes</div>
+              <div className="stat-box-label">Listening Minutes Logged</div>
             </div>
             <div className="stat-box">
               <div className="stat-box-value">
@@ -237,9 +260,16 @@ export default function Analytics() {
                       <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>
                         {i + 1}. {g.name}
                       </span>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--secondary)' }}>
-                        {g.listens} plays
-                      </span>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--secondary)' }}>
+                          {g.listens} plays
+                        </span>
+                        {g.avg_rating > 0 && (
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                            {Number(g.avg_rating).toFixed(1)} ★ rating
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -319,32 +349,87 @@ export default function Analytics() {
       ) : (
         /* Global Platform Analytics Tab */
         <div>
-          {/* Totals */}
-          <div className="grid-cols-4" style={{ marginBottom: '24px' }}>
+          {/* Provenance & Aggregation Level Banner */}
+          <div
+            style={{
+              backgroundColor: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              marginBottom: '20px',
+              fontSize: '0.825rem',
+              color: 'var(--text-muted)',
+              lineHeight: '1.5',
+            }}
+          >
+            <div style={{ fontWeight: '600', color: 'var(--text)', marginBottom: '4px' }}>
+              📊 Multi-Tier Data Source & Aggregation Transparency
+            </div>
+            <div>
+              Platform analytics strictly partition and identify data origins:
+              <strong style={{ color: 'var(--primary)' }}> Live App Activity</strong> (granular interactive sessions & ratings: <code>source_namespace = 'local'</code>),
+              <strong style={{ color: 'var(--secondary)' }}> Imported Historical Dataset</strong> (granular scrobbles & user profiles: <code>source_namespace = 'lastfm'</code>), and
+              <strong style={{ color: 'var(--text)' }}> Pre-Aggregated Catalog Counts</strong> (coarse frequency totals without synthetic timestamps).
+            </div>
+          </div>
+
+          {/* User & Catalog Provenance KPI Row */}
+          <div className="grid-cols-4" style={{ marginBottom: '16px' }}>
             <div className="stat-box">
-              <div className="stat-box-value">{global?.totals?.total_users || 0}</div>
-              <div className="stat-box-label">Registered Listeners</div>
+              <div className="stat-box-value">{global?.totals?.registered_app_users || 0}</div>
+              <div className="stat-box-label">Active App Users (local)</div>
+            </div>
+            <div className="stat-box">
+              <div className="stat-box-value">{global?.totals?.imported_listener_profiles || 0}</div>
+              <div className="stat-box-label">Imported Profiles (lastfm)</div>
             </div>
             <div className="stat-box">
               <div className="stat-box-value">{global?.totals?.total_songs || 0}</div>
-              <div className="stat-box-label">Catalog Songs</div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-box-value">{global?.totals?.total_listens || 0}</div>
-              <div className="stat-box-label">Total Platform Listens</div>
+              <div className="stat-box-label">Total Catalog Songs</div>
             </div>
             <div className="stat-box">
               <div className="stat-box-value">{global?.totals?.total_ratings || 0}</div>
-              <div className="stat-box-label">Ratings Recorded</div>
+              <div className="stat-box-label">App User Ratings (local)</div>
+            </div>
+          </div>
+
+          {/* Play Telemetry Breakdown by Aggregation Level Row */}
+          <div className="grid-cols-4" style={{ marginBottom: '24px' }}>
+            <div className="stat-box">
+              <div className="stat-box-value" style={{ color: 'var(--primary)' }}>
+                {global?.totals?.live_app_listens || 0}
+              </div>
+              <div className="stat-box-label">Live App Sessions (Granular)</div>
+            </div>
+            <div className="stat-box">
+              <div className="stat-box-value" style={{ color: 'var(--secondary)' }}>
+                {global?.totals?.imported_scrobbles || 0}
+              </div>
+              <div className="stat-box-label">Historical Scrobbles (Granular)</div>
+            </div>
+            <div className="stat-box">
+              <div className="stat-box-value">
+                {global?.totals?.aggregated_plays || 0}
+              </div>
+              <div className="stat-box-label">Pre-Aggregated Plays (Coarse)</div>
+            </div>
+            <div className="stat-box">
+              <div className="stat-box-value">
+                {global?.totals?.total_listens || 0}
+              </div>
+              <div className="stat-box-label">Combined Platform Listens</div>
             </div>
           </div>
 
           {/* Global Most Played & Trending Genres */}
           <div className="grid-cols-2" style={{ marginBottom: '24px' }}>
             <div className="card">
-              <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '14px' }}>
-                🔥 Most Played Songs (from <code style={{ color: 'var(--primary)' }}>top_songs_view</code>)
-              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: '700' }}>
+                  🔥 Most Played Songs (from <code style={{ color: 'var(--primary)' }}>top_songs_view</code>)
+                </h3>
+                <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>Granular + Aggregated</span>
+              </div>
               {!global?.mostPlayed || global.mostPlayed.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No song play history recorded yet.</p>
               ) : (
@@ -369,9 +454,16 @@ export default function Analytics() {
                           {song.artist_name} • {song.genre_name}
                         </div>
                       </div>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
-                        {song.play_count} plays
-                      </span>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
+                          {song.play_count} plays
+                        </span>
+                        {song.rating_count > 0 && (
+                          <div style={{ fontSize: '0.7rem', color: 'var(--secondary)' }}>
+                            {Number(song.avg_rating).toFixed(1)} ★ ({song.rating_count})
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -379,9 +471,12 @@ export default function Analytics() {
             </div>
 
             <div className="card">
-              <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '14px' }}>
-                📊 Genre Popularity (from <code style={{ color: 'var(--secondary)' }}>genre_popularity_view</code>)
-              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: '700' }}>
+                  📊 Genre Popularity (from <code style={{ color: 'var(--secondary)' }}>genre_popularity_view</code>)
+                </h3>
+                <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>Catalog Totals</span>
+              </div>
               {!global?.genrePopularity || global.genrePopularity.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No genre popularity data recorded yet.</p>
               ) : (
@@ -419,9 +514,12 @@ export default function Analytics() {
           {/* Global Top Rated Songs & Active Listeners */}
           <div className="grid-cols-2" style={{ marginBottom: '24px' }}>
             <div className="card">
-              <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '14px' }}>
-                ⭐ Highest Rated Songs (from <code style={{ color: 'var(--secondary)' }}>ratings</code>)
-              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: '700' }}>
+                  ⭐ Highest Rated Songs (from <code style={{ color: 'var(--secondary)' }}>ratings</code>)
+                </h3>
+                <span style={{ fontSize: '0.725rem', color: 'var(--primary)', fontWeight: '600' }}>App Users Only</span>
+              </div>
               {!global?.topRated || global.topRated.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No rated songs found in catalog.</p>
               ) : (
@@ -461,9 +559,12 @@ export default function Analytics() {
             </div>
 
             <div className="card">
-              <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '14px' }}>
-                🏆 Most Active Listeners (by log frequency)
-              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: '700' }}>
+                  🏆 Most Active Listeners
+                </h3>
+                <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>Account Provenance</span>
+              </div>
               {!global?.activeUsers || global.activeUsers.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No active listener history found.</p>
               ) : (
@@ -481,11 +582,25 @@ export default function Analytics() {
                       }}
                     >
                       <div>
-                        <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>
-                          #{i + 1} {u.username}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>
+                            #{i + 1} {u.username}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '0.7rem',
+                              padding: '1px 6px',
+                              borderRadius: '8px',
+                              backgroundColor: (u.source_namespace === 'lastfm') ? 'rgba(238, 217, 160, 0.15)' : 'rgba(228, 160, 160, 0.15)',
+                              color: (u.source_namespace === 'lastfm') ? 'var(--secondary)' : 'var(--primary)',
+                              border: `1px solid ${(u.source_namespace === 'lastfm') ? 'var(--secondary)' : 'var(--primary)'}`,
+                            }}
+                          >
+                            {u.source_namespace === 'lastfm' ? 'Last.fm Profile' : 'App User'}
+                          </span>
+                        </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          Registered Account #{u.id}
+                          Account ID #{u.id}
                         </div>
                       </div>
                       <span style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>

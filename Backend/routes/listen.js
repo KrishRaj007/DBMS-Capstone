@@ -9,8 +9,8 @@ router.post('/', auth, async (req, res) => {
     if (!song_id) return res.status(400).json({ error: 'song_id is required' });
 
     await pool.query(
-      'INSERT INTO listening_history (user_id, song_id, duration_listened) VALUES (?, ?, ?)',
-      [req.user.id, song_id, duration_listened || 0]
+      'INSERT INTO listening_history (user_id, song_id, duration_listened, source_namespace) VALUES (?, ?, ?, ?)',
+      [req.user.id, song_id, duration_listened || 0, 'local']
     );
 
     res.status(201).json({ message: 'Listen logged' });
