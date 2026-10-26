@@ -112,6 +112,30 @@ class DeduplicationEngine:
         except Exception:
             pass
 
+        # 4. Prime existing users to prevent duplicate user profiles across re-runs
+        try:
+            cursor.execute("SELECT id, username, email, gender, age, country, created_at, source_namespace, source_id FROM users")
+            for uid_pk, uname, email, gender, age, country, reg_at, src_ns, src_id in cursor.fetchall():
+                user_obj = UserEntity(
+                    user_id=src_id or uname or str(uid_pk),
+                    username=uname,
+                    email=email,
+                    gender=gender,
+                    age=age,
+                    country=country,
+                    registered_at=str(reg_at) if reg_at else None,
+                    source_id=src_id or str(uid_pk),
+                    source_namespace=src_ns or "local",
+                    provenance={"primed_from_db": True}
+                )
+                if src_id:
+                    self.users[src_id.lower()] = user_obj
+                if uname:
+                    self.users[uname.lower()] = user_obj
+                self.users[str(uid_pk)] = user_obj
+        except Exception:
+            pass
+
     def process_user(self, user: UserEntity) -> Tuple[bool, UserEntity]:
         """
         Deduplicates user profiles.

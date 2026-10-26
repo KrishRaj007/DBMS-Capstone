@@ -394,7 +394,13 @@ async function executeMockQuery(sql, params = []) {
     if (numParams.length >= 3) {
       // genre or artist + limit + offset
       const filterVal = numParams[0];
-      list = list.filter(s => s.genre_id === filterVal || s.artist_id === filterVal);
+      if (norm.includes('g.id = ?')) {
+        list = list.filter(s => s.genre_id === filterVal);
+      } else if (norm.includes('a.id = ?')) {
+        list = list.filter(s => s.artist_id === filterVal);
+      } else {
+        list = list.filter(s => s.genre_id === filterVal || s.artist_id === filterVal);
+      }
     }
 
     const limit = numParams[numParams.length - 2] || 15;
@@ -580,6 +586,14 @@ async function executeMockQuery(sql, params = []) {
       return [{ affectedRows: 1 }];
     }
     return [{ affectedRows: 0 }];
+  }
+
+  // 20.5. Playlists: Max position
+  if (norm.includes('max(position)') && norm.includes('from playlist_songs')) {
+    const [plId] = params;
+    const pSongs = PLAYLIST_SONGS.filter(ps => ps.playlist_id === parseInt(plId));
+    const maxPos = pSongs.length ? Math.max(...pSongs.map(ps => ps.position)) : 0;
+    return [[{ maxPos }]];
   }
 
   // 21. Playlists: Add song to playlist

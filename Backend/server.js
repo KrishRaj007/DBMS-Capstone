@@ -36,6 +36,10 @@ app.use((err, _req, res, _next) => {
 
 // ── Start ──────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🎵 Music Analytics API running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🎵 Music Analytics API running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
