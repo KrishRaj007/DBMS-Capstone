@@ -21,7 +21,12 @@ from pipeline.config import (
     GENRES_CLEANED_FILE,
     SONGS_CLEANED_FILE,
     LISTENING_CLEANED_FILE,
-    REJECTED_RECORDS_FILE
+    REJECTED_RECORDS_FILE,
+    DB_HOST,
+    DB_PORT,
+    DB_USER,
+    DB_PASSWORD,
+    DB_NAME
 )
 
 @dataclass
@@ -228,6 +233,187 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             passed=has_alc,
             details="Aggregated listening counts table verified for non-fabricated play counts" if has_alc else "Missing aggregated_listening_counts table"
         ))
+
+    finally:
+        conn.close()
+
+    # Compile scores
+    report.total_checks = len(report.checks)
+    report.passed_checks = sum(1 for c in report.checks if c.passed)
+    report.failed_checks = report.total_checks - report.passed_checks
+    report.quality_score = round((report.passed_checks / report.total_checks) * 100, 1) if report.total_checks else 0.0
+
+    return report
+
+
+def run_mysql_verification() -> VerificationReport:
+    """
+    Executes automated post-load integrity checks against the MySQL database.
+    Verifies that MySQL was actually populated and referential integrity is 100% intact.
+    """
+    report = VerificationReport()
+
+    try:
+        import pymysql
+    except ImportError:
+        report.checks.append(AuditCheck(
+            name="MYSQL_PYMYSQL_AVAILABLE",
+            passed=False,
+            details="pymysql is not installed"
+        ))
+        return report
+
+    try:
+        conn = pymysql.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+            charset="utf8mb4"
+        )
+    except Exception as e:
+        report.checks.append(AuditCheck(
+            name="MYSQL_CONNECTION",
+            passed=False,
+            details=f"Could not connect to MySQL: {e}"
+        ))
+        return report
+
+    try:
+        with conn.cursor() as cursor:
+            # Table counts
+            tables = ["genres", "users", "artists", "songs", "listening_history"]
+            tbl_counts = {}
+            for t in tables:
+                cursor.execute(f"SELECT COUNT(*) FROM {t}")
+                tbl_counts[t] = cursor.fetchone()[0]
+            report.table_counts = tbl_counts
+
+            # Check 1: Non-empty database
+            passed = all(cnt > 0 for cnt in tbl_counts.values())
+            report.checks.append(AuditCheck(
+                name="MYSQL_TABLES_POPULATED",
+                passed=passed,
+                details=f"Populated counts: {tbl_counts}"
+            ))
+
+            # Check 2: Referential Integrity - Songs -> Artists
+            cursor.execute("""
+                SELECT COUNT(*) FROM songs s
+                LEFT JOIN artists a ON s.artist_id = a.id
+                WHERE a.id IS NULL
+            """)
+            orphan_songs = cursor.fetchone()[0]
+            report.checks.append(AuditCheck(
+                name="MYSQL_REFERENTIAL_SONGS_TO_ARTISTS",
+                passed=(orphan_songs == 0),
+                details=f"Orphaned songs referencing missing artists: {orphan_songs}"
+            ))
+
+            # Check 3: Referential Integrity - Songs -> Genres
+            cursor.execute("""
+                SELECT COUNT(*) FROM songs s
+                LEFT JOIN genres g ON s.genre_id = g.id
+                WHERE g.id IS NULL
+            """)
+            orphan_song_genres = cursor.fetchone()[0]
+            report.checks.append(AuditCheck(
+                name="MYSQL_REFERENTIAL_SONGS_TO_GENRES",
+                passed=(orphan_song_genres == 0),
+                details=f"Orphaned songs referencing missing genres: {orphan_song_genres}"
+            ))
+
+            # Check 4: Referential Integrity - Listening History -> Users & Songs
+            cursor.execute("""
+                SELECT COUNT(*) FROM listening_history lh
+                LEFT JOIN users u ON lh.user_id = u.id
+                WHERE u.id IS NULL
+            """)
+            orphan_lh_users = cursor.fetchone()[0]
+
+            cursor.execute("""
+                SELECT COUNT(*) FROM listening_history lh
+                LEFT JOIN songs s ON lh.song_id = s.id
+                WHERE s.id IS NULL
+            """)
+            orphan_lh_songs = cursor.fetchone()[0]
+
+            report.checks.append(AuditCheck(
+                name="MYSQL_REFERENTIAL_LISTENING_HISTORY",
+                passed=(orphan_lh_users == 0 and orphan_lh_songs == 0),
+                details=f"Orphaned listens: missing users={orphan_lh_users}, missing songs={orphan_lh_songs}"
+            ))
+
+            # Check 5: Uniqueness - User Emails & Usernames
+            cursor.execute("SELECT COUNT(*), COUNT(DISTINCT username), COUNT(DISTINCT email) FROM users")
+            u_tot, u_dist_name, u_dist_email = cursor.fetchone()
+            dup_users = (u_tot - u_dist_name) + (u_tot - u_dist_email)
+            report.checks.append(AuditCheck(
+                name="MYSQL_UNIQUENESS_USERS",
+                passed=(dup_users == 0),
+                details=f"Users total: {u_tot}, unique names: {u_dist_name}, unique emails: {u_dist_email}"
+            ))
+
+            # Check 6: Uniqueness - Artist MBIDs
+            cursor.execute("""
+                SELECT COUNT(mbid) - COUNT(DISTINCT mbid)
+                FROM artists
+                WHERE mbid IS NOT NULL AND mbid != ''
+            """)
+            dup_mbids = cursor.fetchone()[0]
+            report.checks.append(AuditCheck(
+                name="MYSQL_UNIQUENESS_ARTIST_MBIDS",
+                passed=(dup_mbids == 0),
+                details=f"Duplicate artist MBIDs: {dup_mbids}"
+            ))
+
+            # Check 7: No Invented Placeholders Audit
+            cursor.execute("SELECT COUNT(*) FROM songs WHERE title IN ('Unknown', 'Placeholder', 'undefined')")
+            hallucinated_songs = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM artists WHERE name IN ('Unknown', 'Placeholder', 'undefined')")
+            hallucinated_artists = cursor.fetchone()[0]
+            report.checks.append(AuditCheck(
+                name="MYSQL_NO_HALLUCINATED_PLACEHOLDERS",
+                passed=(hallucinated_songs == 0 and hallucinated_artists == 0),
+                details=f"Hallucinated songs: {hallucinated_songs}, placeholder artists: {hallucinated_artists}"
+            ))
+
+            # Check 8: Analytic Views Execution
+            cursor.execute("SELECT COUNT(*) FROM top_songs_view")
+            top_songs_count = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM genre_popularity_view")
+            genre_pop_count = cursor.fetchone()[0]
+            report.checks.append(AuditCheck(
+                name="MYSQL_ANALYTICS_VIEWS_OPERATIONAL",
+                passed=(top_songs_count > 0 and genre_pop_count > 0),
+                details=f"Top songs view: {top_songs_count} rows, Genre view: {genre_pop_count} rows"
+            ))
+
+            # Check 9: Source Namespaces Preserved
+            cursor.execute("SELECT COUNT(*) FROM users WHERE source_namespace IS NULL OR source_namespace = ''")
+            null_u_ns = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM artists WHERE source_namespace IS NULL OR source_namespace = ''")
+            null_a_ns = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM songs WHERE source_namespace IS NULL OR source_namespace = ''")
+            null_s_ns = cursor.fetchone()[0]
+            report.checks.append(AuditCheck(
+                name="MYSQL_SOURCE_NAMESPACES_PRESERVED",
+                passed=(null_u_ns == 0 and null_a_ns == 0 and null_s_ns == 0),
+                details=f"Missing namespaces: users={null_u_ns}, artists={null_a_ns}, songs={null_s_ns}"
+            ))
+
+            # Check 10: Aggregated Counts Storage Ready
+            cursor.execute("""
+                SELECT COUNT(*) FROM information_schema.tables
+                WHERE table_schema = DATABASE() AND table_name = 'aggregated_listening_counts'
+            """)
+            has_alc = cursor.fetchone()[0] > 0
+            report.checks.append(AuditCheck(
+                name="MYSQL_AGGREGATED_COUNTS_STORAGE_READY",
+                passed=has_alc,
+                details="aggregated_listening_counts table verified in MySQL" if has_alc else "Missing aggregated_listening_counts"
+            ))
 
     finally:
         conn.close()

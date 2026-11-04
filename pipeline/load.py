@@ -821,7 +821,7 @@ def load_to_sqlite(
     return counts
 
 # ────────────────────────────────────────────────────────────
-# 3. MYSQL TARGET LOADER (Optional / when connected)
+# 3. MYSQL TARGET LOADER (Mandatory Primary Data Store)
 # ────────────────────────────────────────────────────────────
 
 def load_to_mysql(
@@ -830,13 +830,24 @@ def load_to_mysql(
     songs: Dict[int, SongEntity],
     artist_name_to_id: Dict[str, int],
     scrobbles: List[Dict[str, Any]],
-    aggregated_plays: Optional[List[Dict[str, Any]]] = None
-) -> Optional[Dict[str, int]]:
-    """Attempts loading into MySQL database using pymysql with staging and transactions."""
+    aggregated_plays: Optional[List[Dict[str, Any]]] = None,
+    batch_size: int = 2500
+) -> Dict[str, Any]:
+    """
+    Loads normalized entities into MySQL database using:
+    1. Mandatory connection with descriptive error reporting (no silent failure)
+    2. Chunked batch insertion to optimize memory and packet constraints
+    3. Transactional atomic merge with rollback protection
+    4. Safe repeatable upserts preserving existing local demo users and history
+    5. Comprehensive import report with processed, inserted, skipped, and duplicate counts
+    """
     try:
         import pymysql
-    except ImportError:
-        return None
+        from pymysql.cursors import DictCursor
+    except ImportError as e:
+        raise RuntimeError(
+            "pymysql is required to populate MySQL. Install it with: pip install pymysql"
+        ) from e
 
     try:
         conn = pymysql.connect(
@@ -845,103 +856,282 @@ def load_to_mysql(
             user=DB_USER,
             password=DB_PASSWORD,
             database=DB_NAME,
-            charset="utf8mb4"
+            charset="utf8mb4",
+            autocommit=False
         )
-    except Exception:
-        return None
+    except Exception as e:
+        raise ConnectionError(
+            f"Failed to connect to MySQL database '{DB_NAME}' at {DB_HOST}:{DB_PORT} as '{DB_USER}'. "
+            f"Verify that MySQL is running and Backend/.env credentials are correct. Error: {e}"
+        ) from e
 
-    counts = {"genres": 0, "users": 0, "artists": 0, "songs": 0, "listening_history": 0, "aggregated_counts": 0}
+    report = {
+        "status": "success",
+        "processed_records": {
+            "users": len(users),
+            "artists": len(artists),
+            "songs": len(songs),
+            "scrobbles": len(scrobbles),
+            "aggregated_plays": len(aggregated_plays) if aggregated_plays else 0
+        },
+        "inserted_records": {},
+        "updated_records": {},
+        "duplicate_records": {},
+        "failed_records": 0,
+        "table_counts": {}
+    }
+
     try:
         with conn.cursor() as cursor:
-            # Genres
+            # ────────────────────────────────────────────────────────
+            # 1. GENRES (Idempotent seed)
+            # ────────────────────────────────────────────────────────
             genre_rows = [(g["id"], g["name"], g["description"]) for g in STANDARD_GENRES]
             cursor.executemany("""
                 INSERT INTO genres (id, name, description)
                 VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE description=VALUES(description)
             """, genre_rows)
-            counts["genres"] = len(genre_rows)
+            report["inserted_records"]["genres"] = len(genre_rows)
 
-            # Users (Repeatable upsert preserving existing user passwords & IDs)
-            user_rows = []
+            # ────────────────────────────────────────────────────────
+            # 2. USERS (Preserve local credentials, upsert Last.fm metadata)
+            # ────────────────────────────────────────────────────────
+            cursor.execute("SELECT id, username, email, source_id, source_namespace FROM users")
+            existing_users = cursor.fetchall()
+            user_id_map: Dict[str, int] = {}
+            for row in existing_users:
+                db_id, uname, email, s_id, s_ns = row[0], row[1], row[2], row[3], row[4]
+                if s_id and s_ns:
+                    user_id_map[f"{s_ns}::{str(s_id)}"] = db_id
+                if uname:
+                    user_id_map[uname.lower()] = db_id
+                if email:
+                    user_id_map[email.lower()] = db_id
+
+            new_user_rows = []
+            update_user_rows = []
             for u in users.values():
-                user_rows.append((
-                    u.username,
-                    u.email,
-                    "$2a$10$WkLzXmZ1w3m6wWlJkK8c6eM6mZ1w3m6wWlJkK8c6eM6mZ1w3m6wW",
-                    getattr(u, "source_namespace", "lastfm"),
-                    u.source_id,
-                    u.gender,
-                    u.age,
-                    u.country,
-                    u.registered_at or "2006-01-01 00:00:00"
-                ))
-            cursor.executemany("""
-                INSERT INTO users (username, email, password_hash, source_namespace, source_id, gender, age, country, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    source_namespace = VALUES(source_namespace),
-                    source_id = VALUES(source_id),
-                    gender = COALESCE(users.gender, VALUES(gender)),
-                    age = COALESCE(users.age, VALUES(age)),
-                    country = COALESCE(users.country, VALUES(country))
-            """, user_rows)
+                s_ns = getattr(u, "source_namespace", "lastfm")
+                s_id = str(u.source_id)
+                key = f"{s_ns}::{s_id}"
+                existing_id = user_id_map.get(key) or user_id_map.get(u.username.lower()) or user_id_map.get(u.email.lower())
 
-            cursor.execute("SELECT id, username FROM users")
-            user_id_map = {uname.lower(): uid for uid, uname in cursor.fetchall()}
-            counts["users"] = len(user_id_map)
+                if existing_id:
+                    update_user_rows.append((
+                        u.gender,
+                        u.age,
+                        u.country,
+                        s_ns,
+                        s_id,
+                        existing_id
+                    ))
+                else:
+                    new_user_rows.append((
+                        u.username,
+                        u.email,
+                        "$2a$10$WkLzXmZ1w3m6wWlJkK8c6eM6mZ1w3m6wWlJkK8c6eM6mZ1w3m6wW",
+                        s_ns,
+                        s_id,
+                        u.gender,
+                        u.age,
+                        u.country,
+                        u.registered_at or "2006-01-01 00:00:00"
+                    ))
 
-            # Artists (Repeatable upsert)
-            artist_rows = []
+            if update_user_rows:
+                cursor.executemany("""
+                    UPDATE users
+                    SET gender = COALESCE(gender, %s),
+                        age = COALESCE(age, %s),
+                        country = COALESCE(country, %s),
+                        source_namespace = COALESCE(source_namespace, %s),
+                        source_id = COALESCE(source_id, %s)
+                    WHERE id = %s
+                """, update_user_rows)
+
+            if new_user_rows:
+                # Chunked insert
+                for i in range(0, len(new_user_rows), batch_size):
+                    chunk = new_user_rows[i:i + batch_size]
+                    cursor.executemany("""
+                        INSERT INTO users (username, email, password_hash, source_namespace, source_id, gender, age, country, created_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE
+                            source_namespace = VALUES(source_namespace),
+                            source_id = VALUES(source_id)
+                    """, chunk)
+
+            # Rebuild complete user ID mapping
+            cursor.execute("SELECT id, username, source_id, source_namespace FROM users")
+            for uid, uname, s_id, s_ns in cursor.fetchall():
+                if s_id and s_ns:
+                    user_id_map[f"{s_ns}::{str(s_id)}"] = uid
+                if uname:
+                    user_id_map[uname.lower()] = uid
+                if s_id:
+                    user_id_map[str(s_id).lower()] = uid
+
+            report["inserted_records"]["users"] = len(new_user_rows)
+            report["updated_records"]["users"] = len(update_user_rows)
+
+            # ────────────────────────────────────────────────────────
+            # 3. ARTISTS (Enrich existing, insert new without duplicates)
+            # ────────────────────────────────────────────────────────
+            cursor.execute("SELECT id, name, mbid, source_id, source_namespace FROM artists")
+            artist_id_map: Dict[str, int] = {}
+            for aid, name, mbid, s_id, s_ns in cursor.fetchall():
+                artist_id_map[name.lower()] = aid
+                if mbid:
+                    artist_id_map[f"mbid::{mbid.lower()}"] = aid
+                if s_id and s_ns:
+                    artist_id_map[f"src::{s_ns}::{s_id}"] = aid
+
+            new_artists = []
+            update_artists = []
             for aid, a in artists.items():
-                artist_rows.append((
-                    a.name[:100],
-                    a.mbid,
-                    a.original_credit or a.name,
-                    getattr(a, "source_namespace", "lastfm"),
-                    getattr(a, "source_id", str(aid))
-                ))
-            cursor.executemany("""
-                INSERT INTO artists (name, mbid, bio, source_namespace, source_id)
-                VALUES (%s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    mbid = COALESCE(artists.mbid, VALUES(mbid)),
-                    source_id = COALESCE(artists.source_id, VALUES(source_id))
-            """, artist_rows)
+                s_ns = getattr(a, "source_namespace", "lastfm")
+                s_id = getattr(a, "source_id", str(aid))
+                src_key = f"src::{s_ns}::{s_id}"
+                mbid_key = f"mbid::{a.mbid.lower()}" if a.mbid else None
+                existing_id = artist_id_map.get(src_key) or (artist_id_map.get(mbid_key) if mbid_key else None) or artist_id_map.get(a.name.lower())
 
-            cursor.execute("SELECT id, name FROM artists")
-            artist_name_to_db_id = {name.lower(): aid for aid, name in cursor.fetchall()}
-            counts["artists"] = len(artist_name_to_db_id)
+                if existing_id:
+                    update_artists.append((
+                        a.mbid,
+                        a.original_credit,
+                        a.genre_id,
+                        s_ns,
+                        s_id,
+                        existing_id
+                    ))
+                else:
+                    new_artists.append((
+                        a.name[:100],
+                        a.mbid,
+                        a.original_credit or a.name,
+                        a.genre_id,
+                        s_ns,
+                        s_id
+                    ))
 
-            # Songs (Repeatable upsert)
-            song_rows = []
+            if update_artists:
+                for i in range(0, len(update_artists), batch_size):
+                    chunk = update_artists[i:i + batch_size]
+                    cursor.executemany("""
+                        UPDATE artists
+                        SET mbid = COALESCE(artists.mbid, %s),
+                            original_credit = COALESCE(artists.original_credit, %s),
+                            genre_id = COALESCE(artists.genre_id, %s),
+                            source_namespace = COALESCE(artists.source_namespace, %s),
+                            source_id = COALESCE(artists.source_id, %s)
+                        WHERE id = %s
+                    """, chunk)
+
+            if new_artists:
+                for i in range(0, len(new_artists), batch_size):
+                    chunk = new_artists[i:i + batch_size]
+                    cursor.executemany("""
+                        INSERT INTO artists (name, mbid, original_credit, genre_id, source_namespace, source_id)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, chunk)
+
+            # Rebuild artist lookup
+            cursor.execute("SELECT id, name, mbid, source_id, source_namespace FROM artists")
+            artist_id_map.clear()
+            artist_name_to_db_id: Dict[str, int] = {}
+            for aid, name, mbid, s_id, s_ns in cursor.fetchall():
+                artist_id_map[name.lower()] = aid
+                artist_name_to_db_id[name.lower()] = aid
+                if mbid:
+                    artist_id_map[f"mbid::{mbid.lower()}"] = aid
+                if s_id and s_ns:
+                    artist_id_map[f"src::{s_ns}::{s_id}"] = aid
+
+            report["inserted_records"]["artists"] = len(new_artists)
+            report["updated_records"]["artists"] = len(update_artists)
+
+            # ────────────────────────────────────────────────────────
+            # 4. SONGS (Safe lookup by artist + title/mbid)
+            # ────────────────────────────────────────────────────────
+            cursor.execute("SELECT id, title, artist_id, track_mbid, source_id, source_namespace FROM songs")
+            song_lookup: Dict[Tuple[int, str], int] = {}
+            song_mbid_lookup: Dict[Tuple[int, str], int] = {}
+            for sid, title, art_id, tra_mbid, s_id, s_ns in cursor.fetchall():
+                song_lookup[(art_id, title.lower())] = sid
+                if tra_mbid:
+                    song_mbid_lookup[(art_id, tra_mbid.lower())] = sid
+
+            new_songs = []
+            update_songs = []
             for sid, s in songs.items():
                 art_id = artist_name_to_db_id.get(s.artist_name.lower(), 1)
-                song_rows.append((
-                    s.title[:200],
-                    art_id,
-                    s.genre_id,
-                    s.duration_seconds,
-                    s.track_mbid,
-                    getattr(s, "source_namespace", "lastfm"),
-                    getattr(s, "source_id", str(sid))
-                ))
-            cursor.executemany("""
-                INSERT INTO songs (title, artist_id, genre_id, duration_seconds, track_mbid, source_namespace, source_id)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    track_mbid = COALESCE(songs.track_mbid, VALUES(track_mbid)),
-                    source_id = COALESCE(songs.source_id, VALUES(source_id))
-            """, song_rows)
+                norm_title = s.title.lower()
+                existing_id = (
+                    (song_mbid_lookup.get((art_id, s.track_mbid.lower())) if s.track_mbid else None) or
+                    song_lookup.get((art_id, norm_title))
+                )
 
-            cursor.execute("SELECT id, title, artist_id FROM songs")
-            song_lookup = {(art_id, title.lower()): sid for sid, title, art_id in cursor.fetchall()}
-            counts["songs"] = len(song_lookup)
+                s_ns = getattr(s, "source_namespace", "lastfm")
+                s_id = getattr(s, "source_id", str(sid))
 
-            # Listening History (Avoid duplicate scrobbles)
+                if existing_id:
+                    update_songs.append((
+                        s.track_mbid,
+                        s_ns,
+                        s_id,
+                        existing_id
+                    ))
+                else:
+                    new_songs.append((
+                        s.title[:200],
+                        art_id,
+                        s.genre_id or 1,
+                        s.duration_seconds or 0,
+                        s.track_mbid,
+                        s_ns,
+                        s_id
+                    ))
+
+            if update_songs:
+                for i in range(0, len(update_songs), batch_size):
+                    chunk = update_songs[i:i + batch_size]
+                    cursor.executemany("""
+                        UPDATE songs
+                        SET track_mbid = COALESCE(songs.track_mbid, %s),
+                            source_namespace = COALESCE(songs.source_namespace, %s),
+                            source_id = COALESCE(songs.source_id, %s)
+                        WHERE id = %s
+                    """, chunk)
+
+            if new_songs:
+                for i in range(0, len(new_songs), batch_size):
+                    chunk = new_songs[i:i + batch_size]
+                    cursor.executemany("""
+                        INSERT INTO songs (title, artist_id, genre_id, duration_seconds, track_mbid, source_namespace, source_id)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """, chunk)
+
+            # Rebuild song lookup
+            cursor.execute("SELECT id, title, artist_id, track_mbid FROM songs")
+            song_lookup.clear()
+            for sid, title, art_id, tra_mbid in cursor.fetchall():
+                song_lookup[(art_id, title.lower())] = sid
+
+            report["inserted_records"]["songs"] = len(new_songs)
+            report["updated_records"]["songs"] = len(update_songs)
+
+            # ────────────────────────────────────────────────────────
+            # 5. LISTENING HISTORY (Chunked batch insert with INSERT IGNORE)
+            # ────────────────────────────────────────────────────────
+            cursor.execute("SELECT COUNT(*) FROM listening_history")
+            lh_before = cursor.fetchone()[0]
+
             scrobble_rows = []
+            skipped_scrobbles = 0
             for sc in scrobbles:
-                u_id = user_id_map.get(sc["user_id"].lower())
+                raw_uid = sc["user_id"]
+                u_id = user_id_map.get(f"lastfm::{raw_uid}") or user_id_map.get(raw_uid.lower())
                 s_obj = songs.get(sc["song_id"])
                 if u_id and s_obj:
                     art_id = artist_name_to_db_id.get(s_obj.artist_name.lower(), 1)
@@ -955,21 +1145,36 @@ def load_to_mysql(
                             sc.get("source_namespace", "lastfm"),
                             sc.get("source_id")
                         ))
+                    else:
+                        skipped_scrobbles += 1
+                else:
+                    skipped_scrobbles += 1
 
-            if scrobble_rows:
+            for i in range(0, len(scrobble_rows), batch_size):
+                chunk = scrobble_rows[i:i + batch_size]
                 cursor.executemany("""
                     INSERT IGNORE INTO listening_history
                     (user_id, song_id, listened_at, duration_listened, source_namespace, source_id)
                     VALUES (%s, %s, %s, %s, %s, %s)
-                """, scrobble_rows)
-            cursor.execute("SELECT COUNT(*) FROM listening_history")
-            counts["listening_history"] = cursor.fetchone()[0]
+                """, chunk)
 
-            # Aggregated Listening Counts
+            cursor.execute("SELECT COUNT(*) FROM listening_history")
+            lh_after = cursor.fetchone()[0]
+            lh_inserted = lh_after - lh_before
+            lh_duplicate = len(scrobble_rows) - lh_inserted
+
+            report["inserted_records"]["listening_history"] = lh_inserted
+            report["duplicate_records"]["listening_history"] = lh_duplicate
+            report["duplicate_records"]["skipped_scrobbles"] = skipped_scrobbles
+
+            # ────────────────────────────────────────────────────────
+            # 6. AGGREGATED LISTENING COUNTS
+            # ────────────────────────────────────────────────────────
             if aggregated_plays:
                 agg_rows = []
                 for ap in aggregated_plays:
-                    u_id = user_id_map.get(ap.get("user_id", "").lower()) if ap.get("user_id") else None
+                    raw_uid = ap.get("user_id")
+                    u_id = (user_id_map.get(f"lastfm::{raw_uid}") or user_id_map.get(raw_uid.lower())) if raw_uid else None
                     art_id = artist_name_to_db_id.get(ap["artist_name"].lower(), 1)
                     s_id = None
                     if ap.get("track_name"):
@@ -982,22 +1187,36 @@ def load_to_mysql(
                         ap.get("source_namespace", "dataset"),
                         ap.get("source_id")
                     ))
-                cursor.executemany("""
-                    INSERT INTO aggregated_listening_counts
-                    (user_id, artist_id, song_id, play_count, source_namespace, source_id)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    ON DUPLICATE KEY UPDATE play_count = play_count + VALUES(play_count)
-                """, agg_rows)
+
+                for i in range(0, len(agg_rows), batch_size):
+                    chunk = agg_rows[i:i + batch_size]
+                    cursor.executemany("""
+                        INSERT INTO aggregated_listening_counts
+                        (user_id, artist_id, song_id, play_count, source_namespace, source_id)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE play_count = play_count + VALUES(play_count)
+                    """, chunk)
+                report["inserted_records"]["aggregated_counts"] = len(agg_rows)
+
+            # Final Table Counts in MySQL
+            tables = ["genres", "users", "artists", "songs", "listening_history", "aggregated_listening_counts"]
+            for t in tables:
+                cursor.execute(f"SELECT COUNT(*) FROM {t}")
+                report["table_counts"][t] = cursor.fetchone()[0]
 
             conn.commit()
+            print("  ✓ MySQL transaction committed successfully.")
+
     except Exception as e:
         conn.rollback()
-        print(f"MySQL loading exception: {e}")
-        return None
+        report["status"] = "failed"
+        report["failed_records"] = len(scrobbles)
+        print(f"❌ Error during MySQL loading: {e}. Rolled back all changes.")
+        raise e
     finally:
         conn.close()
 
-    return counts
+    return report
 
 # ────────────────────────────────────────────────────────────
 # 4. BACKEND JSON BRIDGE

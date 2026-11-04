@@ -28,7 +28,12 @@ from pipeline.config import (
     RAW_LISTENING_FILE,
     DEFAULT_CHUNK_SIZE,
     DEFAULT_DEV_LIMIT,
-    SQLITE_DB_PATH
+    SQLITE_DB_PATH,
+    DB_HOST,
+    DB_PORT,
+    DB_USER,
+    DB_PASSWORD,
+    DB_NAME
 )
 from pipeline.extract import extract_profiles, extract_listening_chunks
 from pipeline.validate import validate_profile_record, validate_listening_record
@@ -47,35 +52,51 @@ from pipeline.load import (
     load_to_mysql,
     sync_backend_json_bridge
 )
-from pipeline.verify import run_verification
+from pipeline.verify import run_verification, run_mysql_verification
 import sqlite3
 
 def run_pipeline(
     limit: int = DEFAULT_DEV_LIMIT,
     chunk_size: int = DEFAULT_CHUNK_SIZE,
     export_cleaned_only: bool = False,
-    run_verify: bool = True
+    run_verify: bool = True,
+    skip_mysql: bool = False
 ) -> Dict[str, Any]:
     """
-    Executes the modular 7-stage ETL pipeline.
+    Executes the modular 7-stage ETL pipeline with MySQL as the primary target.
     """
     t_start = time.time()
     print("=" * 70)
     print("🚀 STARTING MUSIC ANALYTICS ETL DATA PIPELINE")
     print(f"Workflow: Extract → Validate → Clean → Transform → Deduplicate → Load → Verify")
     limit_str = f"{limit:,}" if limit else "ALL (~19.1M)"
-    print(f"Listening Row Limit: {limit_str} | Chunk Size: {chunk_size:,}")
+    print(f"Listening Row Limit: {limit_str} | Chunk Size: {chunk_size:,} | MySQL Primary: {not skip_mysql}")
     print("=" * 70)
 
     engine = DeduplicationEngine()
 
-    # Adapt schema & prime deduplication engine from existing database to preserve existing PKs/FKs
-    if SQLITE_DB_PATH.is_file():
+    # Prime deduplication engine from existing database to preserve existing PKs/FKs and avoid re-import duplicates
+    primed_source = "None"
+    if not skip_mysql:
+        try:
+            import pymysql
+            mysql_conn = pymysql.connect(
+                host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASSWORD, database=DB_NAME, charset="utf8mb4"
+            )
+            engine.prime_from_mysql(mysql_conn)
+            mysql_conn.close()
+            primed_source = "MySQL"
+            print(f"  ✓ Preserved existing MySQL database: Primed {len(engine.artist_name_to_id):,} artists, "
+                  f"{len(engine.song_title_to_id):,} songs, {len(engine.seen_scrobbles):,} scrobbles")
+        except Exception as e:
+            print(f"  ⚠️ Warning: Could not prime from MySQL ({e}).")
+
+    if primed_source != "MySQL" and SQLITE_DB_PATH.is_file():
         conn = sqlite3.connect(str(SQLITE_DB_PATH))
         adapt_sqlite_schema(conn)
         engine.prime_from_database(conn)
         conn.close()
-        print(f"  ✓ Preserved existing database: Primed {len(engine.artist_name_to_id):,} artists, "
+        print(f"  ✓ Preserved existing SQLite database: Primed {len(engine.artist_name_to_id):,} artists, "
               f"{len(engine.song_title_to_id):,} songs, {len(engine.seen_scrobbles):,} scrobbles")
 
     rejected_records: List[Dict[str, Any]] = []
@@ -230,35 +251,40 @@ def run_pipeline(
     # ────────────────────────────────────────────────────────────
     # PHASE 4: TARGET DATABASE LOADING
     # ────────────────────────────────────────────────────────────
-    db_counts = {}
+    sqlite_counts = {}
+    mysql_report = {}
     if not export_cleaned_only:
         print("\n[Stage 6] Loading into Relational Databases...")
-        # 1. SQLite Relational Store
-        print(f"  → Populating SQLite database: {SQLITE_DB_PATH} ...")
-        db_counts = load_to_sqlite(
-            users=engine.users,
-            artists=engine.artists_by_id,
-            songs=engine.songs_by_id,
-            artist_name_to_id=engine.artist_name_to_id,
-            scrobbles=scrobbles_buffer
-        )
-        print(f"    ✓ SQLite loaded: {db_counts}")
 
-        # 2. MySQL (if reachable)
-        print("  → Checking MySQL server connection...")
-        mysql_counts = load_to_mysql(
-            users=engine.users,
-            artists=engine.artists_by_id,
-            songs=engine.songs_by_id,
-            artist_name_to_id=engine.artist_name_to_id,
-            scrobbles=scrobbles_buffer
-        )
-        if mysql_counts:
-            print(f"    ✓ MySQL populated successfully: {mysql_counts}")
+        # 1. Primary MySQL Target Loader
+        if not skip_mysql:
+            print("  → Populating MySQL database (Primary Data Source)...")
+            mysql_report = load_to_mysql(
+                users=engine.users,
+                artists=engine.artists_by_id,
+                songs=engine.songs_by_id,
+                artist_name_to_id=engine.artist_name_to_id,
+                scrobbles=scrobbles_buffer
+            )
+            print(f"    ✓ MySQL populated successfully:")
+            print(f"      • Table counts: {mysql_report.get('table_counts', {})}")
+            print(f"      • New inserted: {mysql_report.get('inserted_records', {})}")
+            print(f"      • Duplicates avoided: {mysql_report.get('duplicate_records', {})}")
         else:
-            print("    ℹ MySQL credentials pending or server unreachable; SQLite active as primary relational engine.")
+            print("  ℹ MySQL loading skipped via --skip-mysql flag.")
 
-        # 3. Backend JSON Bridge
+        # 2. SQLite Relational Store (Secondary / Backup Store)
+        print(f"  → Populating SQLite database: {SQLITE_DB_PATH} ...")
+        sqlite_counts = load_to_sqlite(
+            users=engine.users,
+            artists=engine.artists_by_id,
+            songs=engine.songs_by_id,
+            artist_name_to_id=engine.artist_name_to_id,
+            scrobbles=scrobbles_buffer
+        )
+        print(f"    ✓ SQLite loaded: {sqlite_counts}")
+
+        # 3. Backend JSON Bridge (for offline mock test runs)
         sync_backend_json_bridge(
             users=engine.users,
             artists=engine.artists_by_id,
@@ -266,14 +292,34 @@ def run_pipeline(
             artist_name_to_id=engine.artist_name_to_id,
             scrobbles=scrobbles_buffer
         )
-        print("  ✓ Synced data with Backend API mock store bridge.")
+        print("  ✓ Synced data with Backend API JSON bridge.")
 
     # ────────────────────────────────────────────────────────────
     # PHASE 5: VERIFICATION & AUDIT
     # ────────────────────────────────────────────────────────────
     verification_summary = None
+    mysql_verification_summary = None
     if run_verify and not export_cleaned_only:
         print("\n[Stage 7] Running Automated Post-Load Verification & Audit...")
+
+        # Verify MySQL (Primary)
+        if not skip_mysql:
+            print("  --- MySQL Integrity Audit ---")
+            mysql_v_report = run_mysql_verification()
+            mysql_verification_summary = {
+                "total_checks": mysql_v_report.total_checks,
+                "passed_checks": mysql_v_report.passed_checks,
+                "failed_checks": mysql_v_report.failed_checks,
+                "quality_score": mysql_v_report.quality_score,
+                "checks": [{"name": c.name, "passed": c.passed, "details": c.details} for c in mysql_v_report.checks]
+            }
+            for c in mysql_v_report.checks:
+                mark = "✅ PASS" if c.passed else "❌ FAIL"
+                print(f"  [{mark}] {c.name}: {c.details}")
+            print(f"  🎯 MySQL Quality Score: {mysql_v_report.quality_score}%")
+
+        # Verify SQLite
+        print("  --- SQLite Integrity Audit ---")
         v_report = run_verification()
         verification_summary = {
             "total_checks": v_report.total_checks,
@@ -285,7 +331,7 @@ def run_pipeline(
         for c in v_report.checks:
             mark = "✅ PASS" if c.passed else "❌ FAIL"
             print(f"  [{mark}] {c.name}: {c.details}")
-        print(f"\n  🎯 Data Pipeline Quality Score: {v_report.quality_score}%")
+        print(f"  🎯 SQLite Quality Score: {v_report.quality_score}%")
 
     total_time = time.time() - t_start
     metrics["finished_at"] = datetime.now(timezone.utc).isoformat()
@@ -296,8 +342,12 @@ def run_pipeline(
     metrics["entities"]["unique_songs"] = len(engine.songs_by_id)
     metrics["entities"]["songs_updated"] = engine.stats.songs_updated_mbid
     metrics["entities"]["total_scrobbles_loaded"] = len(scrobbles_buffer)
-    metrics["database_counts"] = db_counts
-    metrics["verification"] = verification_summary
+    metrics["database_counts"] = sqlite_counts
+    metrics["mysql_import_report"] = mysql_report
+    metrics["verification"] = {
+        "mysql": mysql_verification_summary,
+        "sqlite": verification_summary
+    }
 
     write_pipeline_metrics(metrics)
 
@@ -310,6 +360,8 @@ def run_pipeline(
     print(f"   - Unique Artists: {metrics['entities']['unique_artists']:,} (Updated with MBID: {metrics['entities']['artists_updated']:,})")
     print(f"   - Unique Songs: {metrics['entities']['unique_songs']:,} (Updated with MBID: {metrics['entities']['songs_updated']:,})")
     print(f"   - Scrobbles Stored: {metrics['entities']['total_scrobbles_loaded']:,}")
+    if mysql_report and "table_counts" in mysql_report:
+        print(f"   - MySQL Table Counts: {mysql_report['table_counts']}")
     print(f"   - Cleaned Intermediate Data: {Path('data/cleaned').resolve()}")
     print("=" * 70)
 
@@ -321,23 +373,33 @@ def main():
     parser.add_argument("--chunk-size", type=int, default=DEFAULT_CHUNK_SIZE, help="Chunk size for batch processing")
     parser.add_argument("--export-cleaned-only", action="store_true", help="Stop after staging intermediate cleaned layer")
     parser.add_argument("--verify-only", action="store_true", help="Run verification checks on existing database")
+    parser.add_argument("--skip-mysql", action="store_true", help="Skip loading to MySQL database (SQLite only)")
 
     args = parser.parse_args()
 
     if args.verify_only:
-        print("Running verification checks only...")
+        print("Running MySQL verification checks...")
+        if not args.skip_mysql:
+            m_report = run_mysql_verification()
+            for c in m_report.checks:
+                mark = "✅ PASS" if c.passed else "❌ FAIL"
+                print(f"  [{mark}] {c.name}: {c.details}")
+            print(f"MySQL Quality Score: {m_report.quality_score}%\n")
+
+        print("Running SQLite verification checks...")
         v_report = run_verification()
         for c in v_report.checks:
             mark = "✅ PASS" if c.passed else "❌ FAIL"
             print(f"  [{mark}] {c.name}: {c.details}")
-        print(f"\nQuality Score: {v_report.quality_score}%")
+        print(f"SQLite Quality Score: {v_report.quality_score}%")
         return
 
     run_pipeline(
         limit=args.limit,
         chunk_size=args.chunk_size,
         export_cleaned_only=args.export_cleaned_only,
-        run_verify=True
+        run_verify=True,
+        skip_mysql=args.skip_mysql
     )
 
 if __name__ == "__main__":

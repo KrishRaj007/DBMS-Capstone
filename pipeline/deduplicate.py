@@ -62,7 +62,7 @@ class DeduplicationEngine:
 
     def prime_from_database(self, conn: sqlite3.Connection):
         """
-        Loads existing artists, songs, and users from the database into the deduplication registries.
+        Loads existing artists, songs, and users from SQLite into the deduplication registries.
         Preserves existing primary keys and foreign keys across pipeline runs!
         """
         cursor = conn.cursor()
@@ -135,6 +135,81 @@ class DeduplicationEngine:
                 self.users[str(uid_pk)] = user_obj
         except Exception:
             pass
+
+    def prime_from_mysql(self, conn: Any):
+        """
+        Loads existing artists, songs, users, and scrobbles directly from MySQL
+        into the deduplication registries to preserve IDs and avoid duplicates.
+        """
+        with conn.cursor() as cursor:
+            # 1. Prime artists
+            try:
+                cursor.execute("SELECT id, name, mbid, source_namespace, source_id FROM artists")
+                for aid, name, mbid, src_ns, src_id in cursor.fetchall():
+                    aid = int(aid)
+                    norm_name = name.lower()
+                    self.artist_name_to_id[norm_name] = aid
+                    if mbid:
+                        self.artist_mbid_to_id[mbid.lower()] = aid
+                    if src_ns and src_id:
+                        self.artist_source_to_id[(src_ns, str(src_id))] = aid
+                    if aid >= self._next_artist_id:
+                        self._next_artist_id = aid + 1
+            except Exception as e:
+                print(f"Warning priming artists from MySQL: {e}")
+
+            # 2. Prime songs
+            try:
+                cursor.execute("SELECT id, title, artist_id, track_mbid, source_namespace, source_id FROM songs")
+                for sid, title, art_id, tra_mbid, src_ns, src_id in cursor.fetchall():
+                    sid = int(sid)
+                    art_id = int(art_id)
+                    norm_title = title.lower()
+                    self.song_title_to_id[(art_id, norm_title)] = sid
+                    if tra_mbid:
+                        self.song_mbid_to_id[(art_id, tra_mbid.lower())] = sid
+                    if src_ns and src_id:
+                        self.song_source_to_id[(src_ns, str(src_id))] = sid
+                    if sid >= self._next_song_id:
+                        self._next_song_id = sid + 1
+            except Exception as e:
+                print(f"Warning priming songs from MySQL: {e}")
+
+            # 3. Prime scrobbles
+            try:
+                cursor.execute("""
+                    SELECT u.username, lh.listened_at, lh.song_id
+                    FROM listening_history lh
+                    JOIN users u ON lh.user_id = u.id
+                """)
+                for uname, l_at, song_id in cursor.fetchall():
+                    self.seen_scrobbles.add((uname.lower(), str(l_at), int(song_id)))
+            except Exception as e:
+                print(f"Warning priming scrobbles from MySQL: {e}")
+
+            # 4. Prime users
+            try:
+                cursor.execute("SELECT id, username, email, gender, age, country, created_at, source_namespace, source_id FROM users")
+                for uid_pk, uname, email, gender, age, country, reg_at, src_ns, src_id in cursor.fetchall():
+                    user_obj = UserEntity(
+                        user_id=src_id or uname or str(uid_pk),
+                        username=uname,
+                        email=email,
+                        gender=gender,
+                        age=age,
+                        country=country,
+                        registered_at=str(reg_at) if reg_at else None,
+                        source_id=src_id or str(uid_pk),
+                        source_namespace=src_ns or "local",
+                        provenance={"primed_from_db": True}
+                    )
+                    if src_id:
+                        self.users[src_id.lower()] = user_obj
+                    if uname:
+                        self.users[uname.lower()] = user_obj
+                    self.users[str(uid_pk)] = user_obj
+            except Exception as e:
+                print(f"Warning priming users from MySQL: {e}")
 
     def process_user(self, user: UserEntity) -> Tuple[bool, UserEntity]:
         """
