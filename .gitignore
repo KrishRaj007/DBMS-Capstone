@@ -116,3 +116,7 @@ $RECYCLE.BIN/
 *.sqlite-shm
 *.sqlite-wal
 Backend/db/importedData.json
+
+# ─── Impeccable Local Config ────────────────────────────────
+.impeccable/config.local.json
+

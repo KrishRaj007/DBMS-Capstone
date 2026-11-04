@@ -67,7 +67,7 @@ export default function Profile() {
               height: '64px',
               borderRadius: 'var(--radius)',
               backgroundColor: 'var(--primary)',
-              color: '#1B2A4A',
+              color: 'var(--bg)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

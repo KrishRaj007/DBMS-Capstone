@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { PasswordInput } from '../components/StandardWidgets';
 
@@ -14,7 +14,6 @@ export default function Auth({ initialMode = 'login' }) {
 
   const { login, register } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,7 +31,7 @@ export default function Auth({ initialMode = 'login' }) {
       }
       setTimeout(() => {
         navigate('/dashboard');
-      }, 800);
+      }, 700);
     } catch (err) {
       setErrorMsg(err.response?.data?.error || 'Authentication failed. Please check your credentials.');
     } finally {
@@ -45,18 +44,29 @@ export default function Auth({ initialMode = 'login' }) {
     setPassword(demoPass);
     setIsLogin(true);
     setErrorMsg('');
+    setSuccessMsg('');
   };
 
   return (
     <div className="auth-page" id="main-content">
       <div className="auth-card">
+        {/* Brand & Provenance Badge */}
+        <div className="auth-brand-badge">
+          <div className="auth-brand-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+            </svg>
+          </div>
+          <span className="auth-system-tag">DBMS Telemetry Portal</span>
+        </div>
+
         <h1 className="auth-title">
           {isLogin ? 'Sign In to BeatPulse' : 'Create an Account'}
         </h1>
         <p className="auth-subtitle">
           {isLogin
-            ? 'Access your listening analytics and personalized recommendations'
-            : 'Join the music recommendation DBMS platform'}
+            ? 'Enter your credentials to access personalized recommendations and listening telemetry.'
+            : 'Join the music recommendation DBMS platform with 18,000+ tracks.'}
         </p>
 
         {/* Form Error Banner (Feature 16) */}
@@ -124,8 +134,7 @@ export default function Auth({ initialMode = 'login' }) {
 
           <button
             type="submit"
-            className="btn btn-primary"
-            style={{ width: '100%', marginTop: '8px' }}
+            className="btn btn-primary auth-submit-btn"
             disabled={submitting}
             id="auth-submit-btn"
           >
@@ -136,11 +145,11 @@ export default function Auth({ initialMode = 'login' }) {
         <div className="auth-footer">
           {isLogin ? (
             <p>
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <button
                 type="button"
+                className="auth-toggle-link"
                 onClick={() => { setIsLogin(false); setErrorMsg(''); setSuccessMsg(''); }}
-                style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', cursor: 'pointer' }}
               >
                 Register
               </button>
@@ -150,8 +159,8 @@ export default function Auth({ initialMode = 'login' }) {
               Already registered?{' '}
               <button
                 type="button"
+                className="auth-toggle-link"
                 onClick={() => { setIsLogin(true); setErrorMsg(''); setSuccessMsg(''); }}
-                style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', cursor: 'pointer' }}
               >
                 Sign In
               </button>
@@ -159,32 +168,50 @@ export default function Auth({ initialMode = 'login' }) {
           )}
         </div>
 
-        {/* Demo Credentials Quick Click */}
-        <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', textAlign: 'center' }}>
-            Quick Demo Autofill:
-          </p>
-          <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+        {/* Evaluator Demo Credentials Quick Autofill Deck */}
+        <div className="auth-demo-deck">
+          <div className="auth-demo-header">
+            <span className="auth-demo-label">Evaluator One-Click Autofill</span>
+            <span className="auth-demo-badge">Pre-Seeded Accounts</span>
+          </div>
+          <div className="auth-demo-grid">
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
+              className={`auth-demo-chip ${email === 'john@example.com' ? 'active' : ''}`}
               onClick={() => fillDemo('john@example.com', 'password123')}
             >
-              john_doe
+              <span className="demo-chip-avatar">JD</span>
+              <div className="demo-chip-info">
+                <div className="demo-chip-name">john_doe</div>
+                <div className="demo-chip-taste">john@example.com • Pop &amp; Rock</div>
+              </div>
+              <span className="demo-chip-action">Autofill →</span>
             </button>
+
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
+              className={`auth-demo-chip ${email === 'jane@example.com' ? 'active' : ''}`}
               onClick={() => fillDemo('jane@example.com', 'password123')}
             >
-              jane_smith
+              <span className="demo-chip-avatar">JS</span>
+              <div className="demo-chip-info">
+                <div className="demo-chip-name">jane_smith</div>
+                <div className="demo-chip-taste">jane@example.com • Jazz &amp; Classical</div>
+              </div>
+              <span className="demo-chip-action">Autofill →</span>
             </button>
+
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
+              className={`auth-demo-chip ${email === 'music@example.com' ? 'active' : ''}`}
               onClick={() => fillDemo('music@example.com', 'password123')}
             >
-              music_lover
+              <span className="demo-chip-avatar">ML</span>
+              <div className="demo-chip-info">
+                <div className="demo-chip-name">music_lover</div>
+                <div className="demo-chip-taste">music@example.com • Electronic &amp; Hip-Hop</div>
+              </div>
+              <span className="demo-chip-action">Autofill →</span>
             </button>
           </div>
         </div>

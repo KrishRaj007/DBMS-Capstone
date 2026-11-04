@@ -82,15 +82,15 @@ export default function Analytics() {
     if (active && payload && payload.length) {
       return (
         <div style={{
-          backgroundColor: '#24345A',
-          border: '1px solid #2F426F',
-          borderRadius: '8px',
+          backgroundColor: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)',
           padding: '8px 12px',
-          color: '#FFFFFF',
+          color: 'var(--text)',
           fontSize: '0.8rem',
         }}>
           <p style={{ fontWeight: '600', marginBottom: '2px' }}>{label}</p>
-          <p style={{ color: '#E4A0A0' }}>{payload[0].name || 'Plays'}: {payload[0].value}</p>
+          <p style={{ color: 'var(--primary)' }}>{payload[0].name || 'Plays'}: {payload[0].value}</p>
         </div>
       );
     }
@@ -182,11 +182,11 @@ export default function Analytics() {
               <div style={{ height: '240px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={hourlyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2F426F" vertical={false} />
-                    <XAxis dataKey="hour" stroke="#B8C2D9" fontSize={11} interval={3} />
-                    <YAxis stroke="#B8C2D9" fontSize={11} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1B485E" vertical={false} />
+                    <XAxis dataKey="hour" stroke="#94B7C7" fontSize={11} interval={3} />
+                    <YAxis stroke="#94B7C7" fontSize={11} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="listens" fill="#E4A0A0" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="listens" fill="#10B981" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -199,11 +199,11 @@ export default function Analytics() {
               <div style={{ height: '240px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dailyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2F426F" vertical={false} />
-                    <XAxis dataKey="day" stroke="#B8C2D9" fontSize={11} />
-                    <YAxis stroke="#B8C2D9" fontSize={11} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1B485E" vertical={false} />
+                    <XAxis dataKey="day" stroke="#94B7C7" fontSize={11} />
+                    <YAxis stroke="#94B7C7" fontSize={11} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="listens" fill="#EED9A0" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="listens" fill="#A7F3D0" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -219,16 +219,16 @@ export default function Analytics() {
               <div style={{ height: '220px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={personal.trend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2F426F" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1B485E" vertical={false} />
                     <XAxis
                       dataKey="date"
-                      stroke="#B8C2D9"
+                      stroke="#94B7C7"
                       fontSize={11}
                       tickFormatter={(val) => val ? val.slice(5) : ''}
                     />
-                    <YAxis stroke="#B8C2D9" fontSize={11} />
+                    <YAxis stroke="#94B7C7" fontSize={11} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="listens" stroke="#E4A0A0" strokeWidth={2} dot={{ fill: '#E4A0A0', r: 3 }} />
+                    <Line type="monotone" dataKey="listens" stroke="#10B981" strokeWidth={2} dot={{ fill: '#10B981', r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>

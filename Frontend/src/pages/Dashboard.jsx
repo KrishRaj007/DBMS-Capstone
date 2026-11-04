@@ -70,104 +70,118 @@ export default function Dashboard() {
 
   return (
     <div className="page-container" id="main-content">
+      {/* ── Dashboard Page Header ─────────────────────────────────── */}
       <div className="page-header">
         <div>
+          <div className="badge-provenance" style={{ display: 'inline-flex', marginBottom: '8px' }}>
+            <span>Authenticated Session • User ID #{user?.id || 1}</span>
+          </div>
           <h1 className="page-title">Welcome back, {user?.username}</h1>
           <p className="page-subtitle">
             {recMeta.isPersonalized
-              ? 'Here is your live listening activity and personalized algorithmic recommendations.'
-              : 'Here is your live listening activity and platform discovery recommendations.'}
+              ? 'Real-time telemetry and algorithmic recommendations derived from your relational profile.'
+              : 'Live listening activity and platform catalog recommendations for new listeners.'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '10px' }}>
           <Link to="/library" className="btn btn-secondary btn-sm">
             Browse All Songs
           </Link>
           <Link to="/analytics" className="btn btn-primary btn-sm">
-            View Full Analytics
+            View Full Analytics →
           </Link>
         </div>
       </div>
 
-      {/* KPI Stats Row (from user_analytics_view) */}
+      {/* ── KPI Telemetry Row (from user_analytics_view) ───────────── */}
       <div className="grid-cols-4" style={{ marginBottom: '32px' }}>
-        <div className="stat-box">
+        <div className="stat-box hover-card">
+          <div className="stat-box-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          </div>
           <div className="stat-box-value">{stats?.total_listens || 0}</div>
           <div className="stat-box-label">Total Songs Played</div>
+          <div className="stat-box-sub">From listening_history</div>
         </div>
-        <div className="stat-box">
+
+        <div className="stat-box hover-card">
+          <div className="stat-box-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polygon points="10 8 16 12 10 16 10 8"></polygon>
+            </svg>
+          </div>
           <div className="stat-box-value">{stats?.unique_songs || 0}</div>
           <div className="stat-box-label">Unique Songs Discovered</div>
+          <div className="stat-box-sub">Distinct song_id diversity</div>
         </div>
-        <div className="stat-box">
+
+        <div className="stat-box hover-card">
+          <div className="stat-box-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
           <div className="stat-box-value">{formatMinutes(stats?.total_listen_seconds)}</div>
-          <div className="stat-box-label">Listening Time Logged</div>
+          <div className="stat-box-label">Listening Duration Logged</div>
+          <div className="stat-box-sub">Sum(duration_listened)</div>
         </div>
-        <div className="stat-box">
+
+        <div className="stat-box hover-card">
+          <div className="stat-box-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </div>
           <div className="stat-box-value">
             {stats?.avg_given_rating ? Number(stats.avg_given_rating).toFixed(1) : '0.0'} ★
           </div>
-          <div className="stat-box-label">Average Rating Given</div>
+          <div className="stat-box-label">Mean Rating Given</div>
+          <div className="stat-box-sub">Verified ratings table</div>
         </div>
       </div>
 
-      {/* Recommended For You Section */}
+      {/* ── Recommended For You Section ───────────────────────────── */}
       <section style={{ marginBottom: '36px' }}>
-        <div className="page-header" style={{ marginBottom: '16px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>
-                {recMeta.isPersonalized ? '✨ Recommended For You' : '🎧 Catalog Recommendations'}
+        <div className="recommendation-header-card">
+          <div className="rec-header-content">
+            <div className="rec-title-row">
+              <h2 className="rec-section-title">
+                {recMeta.isPersonalized ? 'Recommended Tracks' : 'Platform Catalog Discovery'}
               </h2>
               <span
-                style={{
-                  fontSize: '0.75rem',
-                  padding: '3px 10px',
-                  borderRadius: '8px',
-                  backgroundColor: recMeta.isPersonalized ? 'rgba(228, 160, 160, 0.15)' : 'rgba(238, 217, 160, 0.15)',
-                  color: recMeta.isPersonalized ? 'var(--primary)' : 'var(--secondary)',
-                  fontWeight: '600',
-                  border: `1px solid ${recMeta.isPersonalized ? 'var(--primary)' : 'var(--secondary)'}`,
-                }}
+                className={`strategy-pill ${recMeta.isPersonalized ? 'strategy-personalized' : 'strategy-baseline'}`}
               >
                 {recMeta.strategy === 'collaborative_filtering' && 'Collaborative Filtering (Peer Tastes)'}
                 {recMeta.strategy === 'content_based' && 'Content-Based (Artist & Genre Affinity)'}
                 {recMeta.strategy === 'popularity_baseline' && (recMeta.userState === 'cold_start' ? 'Platform Baseline (Cold Start)' : 'Catalog Popularity Baseline')}
               </span>
             </div>
-            <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+            <p className="rec-explanation-text">
               {recMeta.explanation}
             </p>
           </div>
           <button
             onClick={loadDashboardData}
             className="btn btn-secondary btn-sm"
-            title="Recalculate recommendations"
+            title="Recalculate recommendations from stored procedure"
           >
-            ↻ Refresh Engine
+            ↻ Re-Query Engine
           </button>
         </div>
 
         {/* Cold Start Notice Banner — transparent and truthful */}
         {!recMeta.isPersonalized && (
-          <div
-            style={{
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: '8px',
-              padding: '12px 16px',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: '0.85rem',
-              color: 'var(--text-muted)',
-              gap: '12px',
-            }}
-          >
-            <span>
-              ℹ️ <strong>New Listener Baseline:</strong> Recommendations are not marked as personalized because you do not have enough listening or rating history yet. These are platform-wide trending tracks across diverse genres. Rate or play tracks in the library to unlock personalized recommendations!
-            </span>
+          <div className="cold-start-banner">
+            <div className="cold-start-text">
+              <span className="cold-start-icon">ℹ️</span>
+              <span>
+                <strong>New Listener Cold-Start Mode:</strong> Recommendations currently reflect verified catalog engagement because your account has few recorded listens. Play or rate songs in the library to trigger preference recalculation!
+              </span>
+            </div>
             <Link to="/library" className="btn btn-secondary btn-sm" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
               Explore Library →
             </Link>
@@ -175,8 +189,8 @@ export default function Dashboard() {
         )}
 
         {recommendations.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '32px' }}>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '12px' }}>
+          <div className="card" style={{ textAlign: 'center', padding: '36px' }}>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '14px' }}>
               No recommendations generated yet. Start listening and rating songs in the library to train your preference vectors!
             </p>
             <Link to="/library" className="btn btn-primary btn-sm">
@@ -184,7 +198,7 @@ export default function Dashboard() {
             </Link>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="song-items-stack">
             {recommendations.map((song) => (
               <SongItem
                 key={song.id}
@@ -198,39 +212,38 @@ export default function Dashboard() {
         )}
       </section>
 
-      {/* Grid: Recent History & Quick Playlists */}
+      {/* ── Grid: Recent History & Playlists ──────────────────────── */}
       <div className="grid-cols-2">
         {/* Recent Listening History */}
         <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: '700' }}>Recent Listening Log</h3>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>audit trail</span>
+          <div className="panel-header-row">
+            <div>
+              <h3 className="panel-title">Recent Listening Telemetry</h3>
+              <p className="panel-sub">Logged to listening_history with exact timestamps</p>
+            </div>
+            <span className="badge-provenance">Audit Log</span>
           </div>
 
           {history.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No recent listens recorded yet.</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '12px 0' }}>
+              No recent listens recorded yet. Click play on any track to start logging telemetry!
+            </p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="history-items-list">
               {history.map((item) => (
-                <div
-                  key={item.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    paddingBottom: '8px',
-                    borderBottom: '1px solid var(--border)',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>{item.title}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {item.artist_name} • {item.genre_name}
+                <div key={item.id} className="history-row-item">
+                  <div className="history-row-left">
+                    <span className="history-track-bullet" aria-hidden="true">▶</span>
+                    <div>
+                      <div className="history-track-title">{item.title}</div>
+                      <div className="history-track-sub">
+                        {item.artist_name} • <span className="song-meta-pill" style={{ padding: '2px 6px', fontSize: '0.7rem' }}>{item.genre_name}</span>
+                      </div>
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    <div>{new Date(item.listened_at).toLocaleDateString()}</div>
-                    <div>{Math.round(item.duration_listened / 60)}m listened</div>
+                  <div className="history-row-right">
+                    <div className="history-date">{new Date(item.listened_at).toLocaleDateString()}</div>
+                    <div className="history-dur">{Math.round(item.duration_listened / 60)}m listened</div>
                   </div>
                 </div>
               ))}
@@ -240,46 +253,40 @@ export default function Dashboard() {
 
         {/* Your Playlists */}
         <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: '700' }}>Your Playlists</h3>
+          <div className="panel-header-row">
+            <div>
+              <h3 className="panel-title">Curated Playlists</h3>
+              <p className="panel-sub">Many-to-Many relational ordering in playlist_songs</p>
+            </div>
             <Link to="/playlists" className="btn btn-secondary btn-sm">
-              Manage (+ New)
+              + New List
             </Link>
           </div>
 
           {playlists.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '12px' }}>
-                You have not created any playlists yet.
+            <div style={{ textAlign: 'center', padding: '28px 0' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '14px' }}>
+                You have not created any custom playlists yet.
               </p>
               <Link to="/playlists" className="btn btn-primary btn-sm">
-                Create Playlist
+                Create First Playlist
               </Link>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="playlists-stack">
               {playlists.slice(0, 4).map((pl) => (
                 <Link
                   key={pl.id}
                   to={`/playlists?id=${pl.id}`}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '10px 14px',
-                    backgroundColor: 'var(--bg)',
-                    borderRadius: 'var(--radius)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                  }}
+                  className="playlist-item-card hover-card"
                 >
                   <div>
-                    <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>{pl.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <div className="playlist-card-title">{pl.name}</div>
+                    <div className="playlist-card-sub">
                       {pl.song_count || 0} tracks • {pl.is_public ? 'Public' : 'Private'}
                     </div>
                   </div>
-                  <span style={{ color: 'var(--primary)', fontSize: '0.85rem' }}>→</span>
+                  <span className="playlist-arrow">→</span>
                 </Link>
               ))}
             </div>

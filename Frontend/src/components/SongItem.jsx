@@ -8,7 +8,8 @@ export default function SongItem({ song, onPlaySuccess, onRateSuccess, playlists
   const { user } = useAuth();
   const { success, error } = useToast();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [rating, setRating] = useState(0); // 0 = user has not rated yet (personal rating unknown)
+  const [rating, setRating] = useState(0); // 0 = user has not rated yet
+  const [hoverRating, setHoverRating] = useState(0);
   const [showPlaylistSelect, setShowPlaylistSelect] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState('');
 
@@ -27,12 +28,12 @@ export default function SongItem({ song, onPlaySuccess, onRateSuccess, playlists
         song_id: song.id,
         duration_listened: song.duration_seconds || 180,
       });
-      success(`Now playing "${song.title}" — listening session logged!`);
+      success(`Now playing "${song.title}" — listening session logged to relational database!`);
       if (onPlaySuccess) onPlaySuccess(song);
     } catch {
       error('Failed to log listening session');
     } finally {
-      setTimeout(() => setIsPlaying(false), 1200);
+      setTimeout(() => setIsPlaying(false), 2400);
     }
   };
 
@@ -44,7 +45,7 @@ export default function SongItem({ song, onPlaySuccess, onRateSuccess, playlists
         song_id: song.id,
         rating: newRating,
       });
-      success(`Rated "${song.title}" ${newRating} stars`);
+      success(`Rated "${song.title}" ${newRating} stars — user preferences updated!`);
       if (onRateSuccess) onRateSuccess(song.id, newRating);
     } catch {
       error('Failed to save rating');
@@ -68,39 +69,54 @@ export default function SongItem({ song, onPlaySuccess, onRateSuccess, playlists
   };
 
   const shareUrl = `${window.location.origin}/songs/${song.id}`;
+  const activeStars = hoverRating || rating;
 
   return (
-    <div className="song-row hover-card" id={`song-item-${song.id}`}>
+    <div className={`song-row hover-card ${isPlaying ? 'song-row-active' : ''}`} id={`song-item-${song.id}`}>
       <div className="song-left">
+        {/* Play / Playing Button */}
         <button
           onClick={handlePlay}
-          className="btn-icon"
+          className={`btn-play-trigger ${isPlaying ? 'is-playing' : ''}`}
           title={`Play ${song.title}`}
           aria-label={`Play ${song.title}`}
           disabled={isPlaying}
         >
           {isPlaying ? (
-            <span style={{ fontSize: '10px', color: 'var(--primary)' }}>▶...</span>
+            <div className="mini-equalizer" aria-label="Audio playing indicator">
+              <span className="eq-bar eq-bar-1"></span>
+              <span className="eq-bar eq-bar-2"></span>
+              <span className="eq-bar eq-bar-3"></span>
+            </div>
           ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <polygon points="5 3 19 12 5 21 5 3"></polygon>
             </svg>
           )}
         </button>
 
-        <div className="song-badge">
-          {song.genre_name ? song.genre_name.slice(0, 2).toUpperCase() : 'MP'}
+        {/* Vinyl / Audio Track Badge */}
+        <div className="song-art-badge" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="4"></circle>
+            <circle cx="12" cy="12" r="1" fill="currentColor"></circle>
+          </svg>
+          <span className="song-art-genre-label">
+            {song.genre_name ? song.genre_name.slice(0, 3).toUpperCase() : 'REC'}
+          </span>
         </div>
 
+        {/* Song Info & Relational Metadata */}
         <div className="song-details">
           <Link to={`/songs/${song.id}`} className="song-title-text" title={song.title}>
             {song.title}
           </Link>
           <div className="song-subtitle-text">
-            <span>{song.artist_name || 'Unknown Artist'}</span>
-            {song.album && <span> • {song.album}</span>}
+            <span className="song-artist-name">{song.artist_name || 'Unknown Artist'}</span>
+            {song.album && <span className="song-album-name"> • {song.album}</span>}
             {song.recommendation_reason && (
-              <span style={{ color: 'var(--secondary)', marginLeft: '6px', fontSize: '0.75rem' }}>
+              <span className="song-rec-reason" title={song.recommendation_reason}>
                 • {song.recommendation_reason}
               </span>
             )}
@@ -113,21 +129,25 @@ export default function SongItem({ song, onPlaySuccess, onRateSuccess, playlists
           <span className="song-meta-pill">{song.genre_name}</span>
         )}
 
-        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+        <span className="song-duration-label">
           {formatDuration(song.duration_seconds)}
         </span>
 
-        {/* 5-star interactive rating */}
-        <div className="star-rating" title={`Rate ${song.title}`}>
+        {/* 5-star interactive rating with SVG stars */}
+        <div className="star-rating" role="group" aria-label={`Rate ${song.title}`}>
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
-              className={`star-btn ${star <= rating ? 'active' : ''}`}
+              className={`star-btn ${star <= activeStars ? 'active' : ''}`}
               onClick={() => handleRate(star)}
+              onMouseEnter={() => setHoverRating(star)}
+              onMouseLeave={() => setHoverRating(0)}
               aria-label={`Rate ${star} out of 5 stars`}
             >
-              ★
+              <svg width="15" height="15" viewBox="0 0 24 24" fill={star <= activeStars ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
             </button>
           ))}
         </div>
@@ -144,23 +164,7 @@ export default function SongItem({ song, onPlaySuccess, onRateSuccess, playlists
               + List
             </button>
             {showPlaylistSelect && (
-              <div
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: '100%',
-                  zIndex: 20,
-                  backgroundColor: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius)',
-                  padding: '10px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  width: '200px',
-                  marginTop: '4px',
-                }}
-              >
+              <div className="playlist-dropdown-menu">
                 <select
                   className="form-input"
                   style={{ padding: '6px' }}
