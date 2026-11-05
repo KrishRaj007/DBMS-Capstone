@@ -13,13 +13,13 @@ router.get('/', auth, async (req, res) => {
     // MySQL stored procedure results come as rows[0]
     const items = Array.isArray(rows[0]) ? rows[0] : (Array.isArray(rows) ? rows : []);
     const isPersonalized = items.some(item => Boolean(item.is_personalized));
-    const strategy = items[0]?.strategy || (isPersonalized ? 'content_based' : 'popularity_baseline');
-    const userState = isPersonalized ? 'active' : 'cold_start';
+    const strategy = items[0]?.strategy || (isPersonalized ? 'collaborative_filtering' : 'popularity_baseline');
+    const userState = strategy === 'collaborative_filtering' ? 'active_peer_overlap' : (isPersonalized ? 'active_developing' : 'cold_start');
     const explanation = items[0]?.strategy_explanation || (
       strategy === 'collaborative_filtering'
-        ? 'Personalized recommendations based on listeners with overlapping musical tastes to yours'
+        ? 'Personalized peer recommendations: derived from listeners in the Last.fm dataset who share common song history with you'
         : (strategy === 'content_based'
-            ? 'Personalized recommendations based on your affinity for top artists and genres'
+            ? 'Personalized content recommendations: matched against your genre and artist affinity profile'
             : 'Platform Baseline: Popular and trending tracks across diverse genres (New listener baseline)')
     );
 

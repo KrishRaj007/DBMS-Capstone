@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { API } from '../context/AuthContext';
 import { LoadingSpinner } from '../components/StandardWidgets';
 import SongItem from '../components/SongItem';
@@ -17,8 +17,12 @@ export default function Library() {
   const searchQuery = searchParams.get('search') || '';
   const selectedGenre = searchParams.get('genre') || '';
   const selectedArtist = searchParams.get('artist') || '';
+  const selectedSort = searchParams.get('sort') || 'title';
   const currentPage = parseInt(searchParams.get('page') || '1');
   const limit = 15;
+
+  // Artist Detail Modal state
+  const [artistModal, setArtistModal] = useState({ open: false, data: null, loading: false });
 
   // Load genres and artists for filters
   useEffect(() => {
@@ -48,6 +52,7 @@ export default function Library() {
         if (searchQuery) params.append('search', searchQuery);
         if (selectedGenre) params.append('genre', selectedGenre);
         if (selectedArtist) params.append('artist', selectedArtist);
+        if (selectedSort) params.append('sort', selectedSort);
         params.append('page', currentPage);
         params.append('limit', limit);
 
@@ -61,7 +66,17 @@ export default function Library() {
       }
     };
     fetchSongs();
-  }, [searchQuery, selectedGenre, selectedArtist, currentPage]);
+  }, [searchQuery, selectedGenre, selectedArtist, selectedSort, currentPage]);
+
+  const handleViewArtist = async (artistId) => {
+    try {
+      setArtistModal({ open: true, data: null, loading: true });
+      const res = await API.get(`/songs/artists/${artistId}`);
+      setArtistModal({ open: true, data: res.data, loading: false });
+    } catch {
+      setArtistModal({ open: false, data: null, loading: false });
+    }
+  };
 
   const updateParam = (key, value) => {
     const next = new URLSearchParams(searchParams);
@@ -138,7 +153,33 @@ export default function Library() {
             </select>
           </div>
 
-          {(searchQuery || selectedGenre || selectedArtist) && (
+          <div style={{ flex: '1', minWidth: '150px' }}>
+            <select
+              className="form-input"
+              value={selectedSort}
+              onChange={(e) => updateParam('sort', e.target.value)}
+              aria-label="Sort tracks by"
+              id="sort-select"
+            >
+              <option value="title">Sort: Title (A-Z)</option>
+              <option value="popular">Sort: Most Popular (Scrobbles)</option>
+              <option value="rating">Sort: Highest Rated</option>
+              <option value="recent">Sort: Recently Added</option>
+              <option value="duration">Sort: Longest Duration</option>
+            </select>
+          </div>
+
+          {selectedArtist && (
+            <button
+              onClick={() => handleViewArtist(selectedArtist)}
+              className="btn btn-primary btn-sm"
+              title="View Artist Profile & Bio"
+            >
+              👤 Artist Info
+            </button>
+          )}
+
+          {(searchQuery || selectedGenre || selectedArtist || selectedSort !== 'title') && (
             <button
               onClick={() => setSearchParams({})}
               className="btn btn-secondary btn-sm"
@@ -204,6 +245,139 @@ export default function Library() {
           >
             Next →
           </button>
+        </div>
+      )}
+
+      {/* Artist Detail Modal */}
+      {artistModal.open && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setArtistModal({ open: false, data: null, loading: false })}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Artist Profile"
+        >
+          <div
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '600px', width: '100%' }}
+          >
+            <div className="modal-header">
+              <h3 className="modal-title">Artist Profile</h3>
+              <button
+                className="modal-close"
+                onClick={() => setArtistModal({ open: false, data: null, loading: false })}
+                aria-label="Close artist profile"
+              >
+                ✕
+              </button>
+            </div>
+
+            {artistModal.loading ? (
+              <LoadingSpinner message="Querying artist record from MySQL..." />
+            ) : artistModal.data ? (
+              <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Artist Header */}
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                    <div>
+                      <h2 style={{ fontSize: '1.4rem', fontWeight: '800', marginBottom: '6px' }}>
+                        {artistModal.data.name}
+                      </h2>
+                      {artistModal.data.mbid && (
+                        <span
+                          className="badge-provenance"
+                          title="MusicBrainz Identifier from Last.fm dataset"
+                          style={{ fontSize: '0.7rem' }}
+                        >
+                          MBID: {artistModal.data.mbid}
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        padding: '2px 8px',
+                        borderRadius: '8px',
+                        backgroundColor: 'rgba(238, 217, 160, 0.12)',
+                        color: 'var(--secondary)',
+                        border: '1px solid var(--secondary)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {artistModal.data.source_namespace === 'lastfm' ? 'Last.fm Import' : 'App Catalog'}
+                    </span>
+                  </div>
+
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '10px', lineHeight: '1.6' }}>
+                    {artistModal.data.bio || 'No biography available for this artist in the current dataset.'}
+                  </p>
+                </div>
+
+                {/* Stats Row */}
+                <div className="grid-cols-2" style={{ gap: '12px' }}>
+                  <div className="stat-box">
+                    <div className="stat-box-value">{artistModal.data.song_count || 0}</div>
+                    <div className="stat-box-label">Songs in Catalog</div>
+                  </div>
+                  <div className="stat-box">
+                    <div className="stat-box-value">{(artistModal.data.total_plays || 0).toLocaleString()}</div>
+                    <div className="stat-box-label">Total Scrobbles</div>
+                  </div>
+                </div>
+
+                {/* Top Tracks */}
+                {artistModal.data.topTracks && artistModal.data.topTracks.length > 0 && (
+                  <div>
+                    <h4 style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Top Tracks
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {artistModal.data.topTracks.map((track, idx) => (
+                        <div
+                          key={track.id}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '8px 12px',
+                            backgroundColor: 'var(--bg)',
+                            borderRadius: 'var(--radius)',
+                            gap: '8px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden' }}>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', flexShrink: 0 }}>
+                              {idx + 1}.
+                            </span>
+                            <Link
+                              to={`/songs/${track.id}`}
+                              style={{ color: 'var(--text)', fontWeight: '600', fontSize: '0.875rem', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                              onClick={() => setArtistModal({ open: false, data: null, loading: false })}
+                            >
+                              {track.title}
+                            </Link>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                            {track.genre_name && (
+                              <span className="song-meta-pill" style={{ fontSize: '0.7rem' }}>{track.genre_name}</span>
+                            )}
+                            <span style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
+                              {(track.play_count || 0).toLocaleString()} plays
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                Artist data could not be loaded. Please try again.
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -20,6 +20,12 @@ export default function Playlists() {
   const [newDesc, setNewDesc] = useState('');
   const [isPublic, setIsPublic] = useState(true);
 
+  // Edit / Rename playlist modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editIsPublic, setEditIsPublic] = useState(true);
+
   // Delete modal state (17. Confirmation Modal)
   const [deleteModal, setDeleteModal] = useState({ open: false, type: null, targetId: null, targetName: '' });
 
@@ -82,6 +88,32 @@ export default function Playlists() {
       handleSelectPlaylist(res.data.id);
     } catch {
       error('Failed to create playlist');
+    }
+  };
+
+  const handleOpenEditModal = () => {
+    if (!selectedPlaylist) return;
+    setEditName(selectedPlaylist.name);
+    setEditDesc(selectedPlaylist.description || '');
+    setEditIsPublic(Boolean(selectedPlaylist.is_public));
+    setShowEditModal(true);
+  };
+
+  const handleUpdatePlaylist = async (e) => {
+    e.preventDefault();
+    if (!editName.trim() || !selectedPlaylist) return;
+    try {
+      await API.put(`/playlists/${selectedPlaylist.id}`, {
+        name: editName.trim(),
+        description: editDesc.trim(),
+        is_public: editIsPublic,
+      });
+      success(`Playlist updated to "${editName}"!`);
+      setShowEditModal(false);
+      fetchPlaylists();
+      loadPlaylistDetail(selectedPlaylist.id);
+    } catch {
+      error('Failed to update playlist');
     }
   };
 
@@ -218,6 +250,13 @@ export default function Playlists() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={handleOpenEditModal}
+                    className="btn btn-secondary btn-sm"
+                    id="edit-playlist-btn"
+                  >
+                    ✏️ Rename / Edit
+                  </button>
                   <Link to="/library" className="btn btn-secondary btn-sm">
                     + Add Songs
                   </Link>
@@ -361,6 +400,73 @@ export default function Playlists() {
                 </button>
                 <button type="submit" className="btn btn-primary" id="save-playlist-btn">
                   Create Playlist
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit / Rename Playlist Modal */}
+      {showEditModal && (
+        <div className="modal-backdrop" onClick={() => setShowEditModal(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Edit / Rename Playlist</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowEditModal(false)}
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleUpdatePlaylist}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="edit-playlist-name">Playlist Name *</label>
+                <input
+                  id="edit-playlist-name"
+                  type="text"
+                  className="form-input"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="edit-playlist-desc">Description</label>
+                <textarea
+                  id="edit-playlist-desc"
+                  className="form-input"
+                  rows="2"
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  id="edit-playlist-public"
+                  type="checkbox"
+                  checked={editIsPublic}
+                  onChange={(e) => setEditIsPublic(e.target.checked)}
+                />
+                <label htmlFor="edit-playlist-public" style={{ fontSize: '0.85rem', color: 'var(--text)' }}>
+                  Public (visible in community feeds)
+                </label>
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowEditModal(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" id="update-playlist-btn">
+                  Save Changes
                 </button>
               </div>
             </form>

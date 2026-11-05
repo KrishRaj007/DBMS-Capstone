@@ -313,14 +313,59 @@ async function executeMockQuery(sql, params = []) {
     return [rows];
   }
 
-  // 5. Songs: Artists list
-  if (norm.includes('from artists a left join songs s')) {
-    const rows = ARTISTS.map(a => ({
+  // 5. Songs: Artists list & Artist detail
+  if (norm.includes('from artists a') && norm.includes('where a.id = ?')) {
+    const artistId = parseInt(params[0]);
+    const artist = ARTISTS.find(a => a.id === artistId);
+    if (!artist) return [[]];
+    const artistSongs = SONGS.filter(s => s.artist_id === artistId);
+    const totalPlays = artistSongs.reduce((sum, s) => sum + LISTENING_HISTORY.filter(lh => lh.song_id === s.id).length, 0);
+    return [[{
+      id: artist.id,
+      name: artist.name,
+      bio: artist.bio || null,
+      image_url: artist.image_url || null,
+      mbid: artist.mbid || null,
+      source_namespace: artist.source_namespace || 'local',
+      song_count: artistSongs.length,
+      total_plays: totalPlays,
+    }]];
+  }
+
+  if (norm.includes('from songs s') && norm.includes('where s.artist_id = ?')) {
+    const artistId = parseInt(params[0]);
+    const artistSongs = SONGS.filter(s => s.artist_id === artistId).map(s => {
+      const g = GENRES.find(genre => genre.id === s.genre_id) || {};
+      const plays = LISTENING_HISTORY.filter(lh => lh.song_id === s.id).length;
+      const rList = RATINGS.filter(r => r.song_id === s.id);
+      const avgR = rList.length ? rList.reduce((acc, curr) => acc + curr.rating, 0) / rList.length : 0;
+      return {
+        id: s.id,
+        title: s.title,
+        album: s.album,
+        duration_seconds: s.duration_seconds,
+        release_date: s.release_date,
+        genre_name: g.name || 'Pop',
+        play_count: plays,
+        avg_rating: avgR,
+      };
+    }).sort((a, b) => b.play_count - a.play_count);
+    return [artistSongs];
+  }
+
+  if (norm.includes('from artists a') && norm.includes('left join songs s')) {
+    let rows = ARTISTS.map(a => ({
       id: a.id,
       name: a.name,
       image_url: null,
+      mbid: a.mbid || null,
       song_count: SONGS.filter(s => s.artist_id === a.id).length,
-    })).sort((a, b) => a.name.localeCompare(b.name));
+    }));
+    if (params.length > 0 && typeof params[0] === 'string' && params[0].startsWith('%')) {
+      const q = params[0].replace(/%/g, '').toLowerCase();
+      rows = rows.filter(r => r.name.toLowerCase().includes(q));
+    }
+    rows.sort((a, b) => b.song_count - a.song_count || a.name.localeCompare(b.name));
     return [rows];
   }
 
@@ -401,6 +446,17 @@ async function executeMockQuery(sql, params = []) {
       } else {
         list = list.filter(s => s.genre_id === filterVal || s.artist_id === filterVal);
       }
+    }
+
+    // Sorting
+    if (norm.includes('play_count desc')) {
+      list.sort((a, b) => b.play_count - a.play_count || a.title.localeCompare(b.title));
+    } else if (norm.includes('avg_rating desc')) {
+      list.sort((a, b) => b.avg_rating - a.avg_rating || b.play_count - a.play_count);
+    } else if (norm.includes('s.id desc') || norm.includes('release_date desc')) {
+      list.sort((a, b) => b.id - a.id);
+    } else {
+      list.sort((a, b) => a.title.localeCompare(b.title));
     }
 
     const limit = numParams[numParams.length - 2] || 15;

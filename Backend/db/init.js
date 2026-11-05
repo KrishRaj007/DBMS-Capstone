@@ -504,7 +504,7 @@ async function initializeDatabase() {
     `);
     console.log('✓ 3 Analytical SQL views compiled with aggregated counts support');
 
-    // 5. Stored Procedures
+    // 5. Stored Procedures — Progressive Recommendation Hierarchy (Collaborative, Content-Based, Popularity Baseline)
     await conn.query(`
       CREATE PROCEDURE sp_get_recommendations(
         IN p_user_id INT,
@@ -513,12 +513,17 @@ async function initializeDatabase() {
       BEGIN
         DECLARE v_user_activity INT DEFAULT 0;
 
+        -- 1. Ensure user preference weights are up to date
+        CALL sp_update_preferences(p_user_id);
+
+        -- 2. Count user's total listening and rating events
         SELECT (
           (SELECT COUNT(*) FROM listening_history WHERE user_id = p_user_id) +
           (SELECT COUNT(*) FROM ratings WHERE user_id = p_user_id)
         ) INTO v_user_activity;
 
-        IF v_user_activity = 0 THEN
+        -- Tier 1: Cold Start (< 2 activities) -> Popularity Baseline
+        IF v_user_activity < 2 THEN
           SELECT
             s.id, s.title, s.album, s.duration_seconds, s.cover_url, s.release_date,
             a.name AS artist_name, a.id AS artist_id,
@@ -526,7 +531,7 @@ async function initializeDatabase() {
             COALESCE(play_stats.play_count, 0) AS play_count,
             COALESCE(rate_stats.avg_rating, 0) AS avg_rating,
             COALESCE(rate_stats.rating_count, 0) AS rating_count,
-            CONCAT('Trending track in ', g.name) AS recommendation_reason,
+            CONCAT('Top catalog track in ', g.name, ' across 50,000+ listener scrobbles') AS recommendation_reason,
             'popularity_baseline' AS strategy,
             FALSE AS is_personalized,
             (LOG(1 + COALESCE(play_stats.play_count, 0)) +
@@ -548,6 +553,57 @@ async function initializeDatabase() {
           )
           ORDER BY score DESC
           LIMIT p_limit;
+
+        -- Tier 3: Active User (>= 5 activities) -> Collaborative Filtering with Content-Based fallback blend
+        ELSEIF v_user_activity >= 5 THEN
+          SELECT
+            s.id, s.title, s.album, s.duration_seconds, s.cover_url, s.release_date,
+            a.name AS artist_name, a.id AS artist_id,
+            g.name AS genre_name, g.id AS genre_id,
+            COALESCE(play_stats.play_count, 0) AS play_count,
+            COALESCE(rate_stats.avg_rating, 0) AS avg_rating,
+            COALESCE(rate_stats.rating_count, 0) AS rating_count,
+            CASE
+              WHEN cf.co_listens > 0 THEN CONCAT('Listeners with similar musical taste to yours also frequently play this track')
+              ELSE CONCAT('Matches your affinity for ', g.name, ' and ', a.name)
+            END AS recommendation_reason,
+            CASE
+              WHEN cf.co_listens > 0 THEN 'collaborative_filtering'
+              ELSE 'content_based'
+            END AS strategy,
+            TRUE AS is_personalized,
+            (COALESCE(cf.co_listens, 0) * 3.0
+             + COALESCE(up.preference_weight, 0) * 2.0
+             + LOG(1 + COALESCE(play_stats.play_count, 0))
+             + CASE WHEN COALESCE(rate_stats.rating_count, 0) > 0
+                    THEN (rate_stats.avg_rating * (rate_stats.rating_count / (rate_stats.rating_count + 2)))
+                    ELSE 0 END
+            ) AS score
+          FROM songs s
+            JOIN artists a ON s.artist_id = a.id
+            JOIN genres  g ON s.genre_id  = g.id
+            LEFT JOIN (
+              SELECT rec_lh.song_id, COUNT(*) AS co_listens
+              FROM listening_history my_lh
+                JOIN listening_history peer_lh ON my_lh.song_id = peer_lh.song_id AND peer_lh.user_id != my_lh.user_id
+                JOIN listening_history rec_lh ON peer_lh.user_id = rec_lh.user_id AND rec_lh.song_id != my_lh.song_id
+              WHERE my_lh.user_id = p_user_id
+              GROUP BY rec_lh.song_id
+            ) cf ON s.id = cf.song_id
+            LEFT JOIN user_preferences up ON s.genre_id = up.genre_id AND up.user_id = p_user_id
+            LEFT JOIN (
+              SELECT song_id, COUNT(*) AS play_count FROM listening_history GROUP BY song_id
+            ) play_stats ON s.id = play_stats.song_id
+            LEFT JOIN (
+              SELECT song_id, AVG(rating) AS avg_rating, COUNT(*) AS rating_count FROM ratings GROUP BY song_id
+            ) rate_stats ON s.id = rate_stats.song_id
+          WHERE s.id NOT IN (
+            SELECT song_id FROM listening_history WHERE user_id = p_user_id
+          )
+          ORDER BY score DESC
+          LIMIT p_limit;
+
+        -- Tier 2: Developing User (2 to 4 activities) -> Content-Based / Preference Filtering
         ELSE
           SELECT
             s.id, s.title, s.album, s.duration_seconds, s.cover_url, s.release_date,
@@ -557,12 +613,12 @@ async function initializeDatabase() {
             COALESCE(rate_stats.avg_rating, 0) AS avg_rating,
             COALESCE(rate_stats.rating_count, 0) AS rating_count,
             CASE
-              WHEN up.preference_weight > 0 THEN CONCAT('Matches your taste in ', g.name)
+              WHEN up.preference_weight > 0 THEN CONCAT('Matches your taste profile in ', g.name)
               ELSE CONCAT('Recommended discovery in ', g.name)
             END AS recommendation_reason,
             'content_based' AS strategy,
             TRUE AS is_personalized,
-            (COALESCE(up.preference_weight, 0) * 2.5
+            (COALESCE(up.preference_weight, 0) * 3.0
              + LOG(1 + COALESCE(play_stats.play_count, 0))
              + CASE WHEN COALESCE(rate_stats.rating_count, 0) > 0
                     THEN (rate_stats.avg_rating * (rate_stats.rating_count / (rate_stats.rating_count + 2)))

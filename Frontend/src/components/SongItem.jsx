@@ -28,7 +28,7 @@ export default function SongItem({ song, onPlaySuccess, onRateSuccess, playlists
         song_id: song.id,
         duration_listened: song.duration_seconds || 180,
       });
-      success(`Now playing "${song.title}" — listening session logged to relational database!`);
+      success(`Session logged for "${song.title}" — added to your Recently Played in MySQL (metadata mode)`);
       if (onPlaySuccess) onPlaySuccess(song);
     } catch {
       error('Failed to log listening session');

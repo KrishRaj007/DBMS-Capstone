@@ -1,12 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, API } from '../context/AuthContext';
 import { CopyButton, ExpandableFAQ } from '../components/StandardWidgets';
 
 export default function Landing() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
   const [activeDemoTrackPlaying, setActiveDemoTrackPlaying] = useState(false);
+  const [liveStats, setLiveStats] = useState(null);
+
+  // Fetch live MySQL stats on mount — no auth required (public endpoint)
+  useEffect(() => {
+    API.get('/analytics/global')
+      .then((res) => setLiveStats(res.data))
+      .catch(() => {
+        // Silently fall back to static values if backend is unreachable
+      });
+  }, []);
 
   const handleDemoLogin = async (username) => {
     try {
@@ -62,22 +72,36 @@ export default function Landing() {
             {/* Quick Live Telemetry Counter Row */}
             <div className="hero-metrics-strip">
               <div className="metric-chip">
-                <span className="metric-chip-value">18,002</span>
+                <span className="metric-chip-value">
+                  {liveStats?.totals?.total_songs
+                    ? liveStats.totals.total_songs.toLocaleString()
+                    : '10,000+'}
+                </span>
                 <span className="metric-chip-label">Indexed Songs</span>
               </div>
               <div className="metric-chip-divider" aria-hidden="true"></div>
               <div className="metric-chip">
-                <span className="metric-chip-value">3,311</span>
+                <span className="metric-chip-value">
+                  {liveStats?.totals?.total_artists
+                    ? liveStats.totals.total_artists.toLocaleString()
+                    : '1,700+'}
+                </span>
                 <span className="metric-chip-label">Verified Artists</span>
               </div>
               <div className="metric-chip-divider" aria-hidden="true"></div>
               <div className="metric-chip">
-                <span className="metric-chip-value">100,000+</span>
+                <span className="metric-chip-value">
+                  {liveStats?.totals?.total_listens
+                    ? liveStats.totals.total_listens.toLocaleString()
+                    : '50,000+'}
+                </span>
                 <span className="metric-chip-label">Historical Scrobbles</span>
               </div>
               <div className="metric-chip-divider" aria-hidden="true"></div>
               <div className="metric-chip">
-                <span className="metric-chip-value">10</span>
+                <span className="metric-chip-value">
+                  {liveStats?.genrePopularity?.length || 10}
+                </span>
                 <span className="metric-chip-label">Genre Taxonomies</span>
               </div>
             </div>
