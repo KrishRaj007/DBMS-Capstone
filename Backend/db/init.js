@@ -605,17 +605,21 @@ async function initializeDatabase() {
     `);
     console.log('✓ Stored procedures compiled (sp_get_recommendations, sp_update_preferences)');
 
-    // 6. Triggers
+    // 6. Triggers (Optimized: only updates real-time preferences for active local app users)
     await conn.query(`
       CREATE TRIGGER trg_after_listen
       AFTER INSERT ON listening_history
       FOR EACH ROW
       BEGIN
         DECLARE v_genre_id INT;
-        SELECT genre_id INTO v_genre_id FROM songs WHERE id = NEW.song_id;
-        INSERT INTO user_preferences (user_id, genre_id, preference_weight)
-        VALUES (NEW.user_id, v_genre_id, 1.00)
-        ON DUPLICATE KEY UPDATE preference_weight = preference_weight + 0.10;
+        IF NEW.source_namespace = 'local' THEN
+          SELECT genre_id INTO v_genre_id FROM songs WHERE id = NEW.song_id;
+          IF v_genre_id IS NOT NULL THEN
+            INSERT INTO user_preferences (user_id, genre_id, preference_weight)
+            VALUES (NEW.user_id, v_genre_id, 1.00)
+            ON DUPLICATE KEY UPDATE preference_weight = preference_weight + 0.10;
+          END IF;
+        END IF;
       END
     `);
 
@@ -626,9 +630,11 @@ async function initializeDatabase() {
       BEGIN
         DECLARE v_genre_id INT;
         SELECT genre_id INTO v_genre_id FROM songs WHERE id = NEW.song_id;
-        INSERT INTO user_preferences (user_id, genre_id, preference_weight)
-        VALUES (NEW.user_id, v_genre_id, NEW.rating * 0.5)
-        ON DUPLICATE KEY UPDATE preference_weight = GREATEST(preference_weight, NEW.rating * 0.5);
+        IF v_genre_id IS NOT NULL THEN
+          INSERT INTO user_preferences (user_id, genre_id, preference_weight)
+          VALUES (NEW.user_id, v_genre_id, NEW.rating * 0.5)
+          ON DUPLICATE KEY UPDATE preference_weight = GREATEST(preference_weight, NEW.rating * 0.5);
+        END IF;
       END
     `);
     console.log('✓ Database triggers compiled (trg_after_listen, trg_after_rating)');
