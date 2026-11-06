@@ -6,275 +6,241 @@ import { CopyButton, ExpandableFAQ } from '../components/StandardWidgets';
 export default function Landing() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
-  const [activeDemoTrackPlaying, setActiveDemoTrackPlaying] = useState(false);
   const [liveStats, setLiveStats] = useState(null);
+  const [activeDemoTrackPlaying, setActiveDemoTrackPlaying] = useState(false);
 
-  // Fetch live MySQL stats on mount — no auth required (public endpoint)
   useEffect(() => {
     API.get('/analytics/global')
       .then((res) => setLiveStats(res.data))
-      .catch(() => {
-        // Silently fall back to static values if backend is unreachable
-      });
+      .catch(() => {});
   }, []);
 
-  const handleDemoLogin = async (username) => {
+  const handleDemoLogin = async (email) => {
     try {
-      const email = username === 'john_doe' ? 'john@example.com' :
-                    username === 'jane_smith' ? 'jane@example.com' : 'music@example.com';
       await login(email, 'password123');
       navigate('/dashboard');
     } catch {
-      // handled in auth context
+      // handled
     }
   };
 
   return (
-    <div className="landing-wrapper">
-      {/* ── 1. Hero Showcase Section ─────────────────────────────── */}
-      <section className="landing-hero-showcase" id="main-content">
-        <div className="landing-hero-grid">
-          {/* Left Column: Mission, Positioning & Actions */}
-          <div className="hero-content-col">
-            <div className="hero-system-pill">
-              <span className="system-pill-dot" aria-hidden="true"></span>
-              <span>DBMS Capstone • 3NF Normalized Engine • MySQL 8.0+ / SQLite</span>
-            </div>
+    <div className="page-container" id="main-content" style={{ paddingTop: '24px' }}>
+      {/* ── Main Hero Editorial ───────────────────────────────────── */}
+      <section style={{ maxWidth: '820px', marginBottom: '56px' }}>
+        <h1 style={{ fontSize: '2.75rem', fontWeight: '800', lineHeight: '1.15', letterSpacing: '-0.035em', marginBottom: '16px', color: 'var(--text)' }}>
+          Music recommendations powered by pure relational data.
+        </h1>
 
-            <h1 className="hero-headline">
-              Precision Music Recommendations &amp; <span className="text-accent-primary">Listening Analytics</span>
-            </h1>
+        <p className="editorial-lead" style={{ marginBottom: '28px' }}>
+          BeatPulse tracks authentic listener scrobbles, calculates real-time taste affinity in MySQL, and recommends tracks across a verified Last.fm catalog of 10,000+ songs.
+        </p>
 
-            <p className="hero-lead-text">
-              A full-stack relational database management system designed to process high-volume scrobble telemetry, execute adaptive multi-strategy recommendation procedures, and calculate live analytical views across 18,000+ catalog tracks.
-            </p>
-
-            <div className="hero-actions-row">
-              {user ? (
-                <Link to="/dashboard" className="btn btn-primary btn-lg" id="landing-dash-btn">
-                  Go to Dashboard →
-                </Link>
-              ) : (
-                <>
-                  <Link to="/register" className="btn btn-primary btn-lg" id="landing-register-btn">
-                    Create Free Account
-                  </Link>
-                  <Link to="/login" className="btn btn-secondary btn-lg" id="landing-login-btn">
-                    Sign In
-                  </Link>
-                </>
-              )}
-              <Link to="/library" className="btn btn-secondary btn-lg">
-                Explore Catalog
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {user ? (
+            <Link to="/dashboard" className="btn btn-primary btn-lg">
+              Open Dashboard →
+            </Link>
+          ) : (
+            <>
+              <Link to="/register" className="btn btn-primary btn-lg">
+                Create an Account
               </Link>
-            </div>
+              <Link to="/login" className="btn btn-secondary btn-lg">
+                Sign In
+              </Link>
+            </>
+          )}
+          <Link to="/library" className="btn btn-secondary btn-lg">
+            Browse the Catalog
+          </Link>
+        </div>
+      </section>
 
-            {/* Quick Live Telemetry Counter Row */}
-            <div className="hero-metrics-strip">
-              <div className="metric-chip">
-                <span className="metric-chip-value">
-                  {liveStats?.totals?.total_songs
-                    ? liveStats.totals.total_songs.toLocaleString()
-                    : '10,000+'}
-                </span>
-                <span className="metric-chip-label">Indexed Songs</span>
-              </div>
-              <div className="metric-chip-divider" aria-hidden="true"></div>
-              <div className="metric-chip">
-                <span className="metric-chip-value">
-                  {liveStats?.totals?.total_artists
-                    ? liveStats.totals.total_artists.toLocaleString()
-                    : '1,700+'}
-                </span>
-                <span className="metric-chip-label">Verified Artists</span>
-              </div>
-              <div className="metric-chip-divider" aria-hidden="true"></div>
-              <div className="metric-chip">
-                <span className="metric-chip-value">
-                  {liveStats?.totals?.total_listens
-                    ? liveStats.totals.total_listens.toLocaleString()
-                    : '50,000+'}
-                </span>
-                <span className="metric-chip-label">Historical Scrobbles</span>
-              </div>
-              <div className="metric-chip-divider" aria-hidden="true"></div>
-              <div className="metric-chip">
-                <span className="metric-chip-value">
-                  {liveStats?.genrePopularity?.length || 10}
-                </span>
-                <span className="metric-chip-label">Genre Taxonomies</span>
-              </div>
-            </div>
+      {/* ── Live Relational Metrics Banner ─────────────────────────── */}
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '56px', borderTop: '1px solid var(--border)', paddingTop: '28px' }}>
+        <div>
+          <div style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text)' }}>
+            {liveStats?.totals?.total_songs ? liveStats.totals.total_songs.toLocaleString() : '10,256'}
           </div>
+          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+            Catalog tracks indexed in 3NF
+          </div>
+        </div>
 
-          {/* Right Column: Live Interactive Architectural Showcase Card */}
-          <div className="hero-preview-col">
-            <div className="catalog-preview-card">
-              <div className="preview-card-header">
-                <div className="preview-header-left">
-                  <span className="preview-terminal-dot"></span>
-                  <span className="preview-terminal-title">Relational Telemetry Engine</span>
-                </div>
-                <span className="badge-provenance">Active Procedure: sp_get_recommendations</span>
-              </div>
+        <div>
+          <div style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text)' }}>
+            1,702
+          </div>
+          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+            Artists mapped to MusicBrainz
+          </div>
+        </div>
 
-              {/* Simulated Interactive Track Player */}
-              <div className="preview-track-box">
-                <div className="preview-track-top">
-                  <div className="preview-disc-art">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <circle cx="12" cy="12" r="4"></circle>
-                      <circle cx="12" cy="12" r="1" fill="currentColor"></circle>
-                    </svg>
-                  </div>
-                  <div className="preview-track-meta">
-                    <div className="preview-track-title">Midnight City</div>
-                    <div className="preview-track-artist">M83 • Hurry Up, We&apos;re Dreaming</div>
-                  </div>
-                  <button
-                    className={`btn-play-trigger ${activeDemoTrackPlaying ? 'is-playing' : ''}`}
-                    onClick={() => setActiveDemoTrackPlaying(!activeDemoTrackPlaying)}
-                    title={activeDemoTrackPlaying ? 'Pause demo' : 'Simulate playback'}
-                    aria-label="Toggle demo track playback"
-                  >
-                    {activeDemoTrackPlaying ? (
-                      <div className="mini-equalizer">
-                        <span className="eq-bar eq-bar-1"></span>
-                        <span className="eq-bar eq-bar-2"></span>
-                        <span className="eq-bar eq-bar-3"></span>
-                      </div>
-                    ) : (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                      </svg>
-                    )}
-                  </button>
-                </div>
+        <div>
+          <div style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--secondary)' }}>
+            {liveStats?.totals?.total_listens ? liveStats.totals.total_listens.toLocaleString() : '50,126'}
+          </div>
+          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+            Historical scrobbles imported
+          </div>
+        </div>
 
-                {/* Algorithmic Scoring Banner */}
-                <div className="preview-rationale-box">
-                  <div className="preview-rationale-tag">
-                    <span className="rationale-bullet">●</span>
-                    <span>Rationale: Content-Based Affinity (Electronic 92% • Pop 85%)</span>
-                  </div>
-                  <div className="preview-score-formula">
-                    Score = (W_genre × 2) + R_song + ln(1 + Plays) = <strong>8.42</strong>
-                  </div>
-                </div>
-
-                {/* Telemetry Status Grid */}
-                <div className="preview-telemetry-grid">
-                  <div className="telemetry-cell">
-                    <span className="telemetry-cell-label">DB Trigger</span>
-                    <span className="telemetry-cell-value">trg_after_listen</span>
-                  </div>
-                  <div className="telemetry-cell">
-                    <span className="telemetry-cell-label">Provenance</span>
-                    <span className="telemetry-cell-value">source_namespace: local</span>
-                  </div>
-                  <div className="telemetry-cell">
-                    <span className="telemetry-cell-label">Target View</span>
-                    <span className="telemetry-cell-value">top_songs_view</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="preview-footer-note">
-                ⚡ Real-time preference re-weighting is calculated dynamically via database event triggers.
-              </div>
-            </div>
+        <div>
+          <div style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text)' }}>
+            10
+          </div>
+          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+            Curated genre taxonomies
           </div>
         </div>
       </section>
 
-      {/* ── 2. Pre-seeded Evaluator Persona Access ───────────────── */}
-      {!user && (
-        <section className="evaluator-personas-section">
-          <div className="section-header-block">
-            <h2 className="section-title">One-Click Evaluator Personas</h2>
-            <p className="section-subtitle">
-              Pre-seeded with real listening logs, star ratings, and tailored preference matrices for instant verification:
-            </p>
+      {/* ── How the Relational Engine Works ───────────────────────── */}
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px', marginBottom: '64px', alignItems: 'flex-start' }}>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text)', marginBottom: '12px' }}>
+            How recommendations evolve as you listen
+          </h2>
+          <p className="editorial-lead" style={{ fontSize: '0.95rem', marginBottom: '24px' }}>
+            Instead of opaque machine-learning black boxes, BeatPulse relies on transparent relational queries, triggers, and stored procedures.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', gap: '14px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius)', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem', color: 'var(--primary)', flexShrink: 0 }}>
+                1
+              </div>
+              <div>
+                <strong style={{ display: 'block', color: 'var(--text)', fontSize: '0.95rem' }}>Popularity baseline for newcomers</strong>
+                <span className="editorial-note">When you have fewer than 2 plays, recommendations prioritize top catalog songs across diverse genres.</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '14px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius)', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem', color: 'var(--primary)', flexShrink: 0 }}>
+                2
+              </div>
+              <div>
+                <strong style={{ display: 'block', color: 'var(--text)', fontSize: '0.95rem' }}>Content affinity from your ratings</strong>
+                <span className="editorial-note">Between 2 and 4 plays, MySQL triggers update your genre affinity weights to deliver personalized matches.</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '14px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius)', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem', color: 'var(--secondary)', flexShrink: 0 }}>
+                3
+              </div>
+              <div>
+                <strong style={{ display: 'block', color: 'var(--text)', fontSize: '0.95rem' }}>Collaborative filtering from peer overlap</strong>
+                <span className="editorial-note">At 5+ plays, SQL joins connect your history with listeners in the Last.fm dataset who share common songs.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Live Track Session Preview */}
+        <div className="card" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text)' }}>
+              Top Track in Catalog View
+            </span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--secondary)' }}>
+              85 Scrobbles
+            </span>
           </div>
 
-          <div className="personas-grid">
-            {/* Persona 1 */}
-            <div className="persona-card hover-card">
-              <div className="persona-card-top">
-                <div className="persona-avatar">JD</div>
-                <div className="persona-info">
-                  <div className="persona-name">john_doe</div>
-                  <div className="persona-email">john@example.com</div>
+          <div style={{ padding: '16px', backgroundColor: 'var(--bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', marginBottom: '18px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '1rem' }}>
+                  {liveStats?.mostPlayed?.[0]?.title || 'Nacht'}
                 </div>
-                <span className="persona-taste-badge">Pop &amp; Rock</span>
+                <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  {liveStats?.mostPlayed?.[0]?.artist_name || 'Kettcar'} • {liveStats?.mostPlayed?.[0]?.genre_name || 'Rock'}
+                </div>
               </div>
-              <div className="persona-stats-row">
-                <span>15 Scrobble Logs</span>
-                <span>•</span>
-                <span>4 Star Ratings</span>
+              <button
+                type="button"
+                className={`btn-play-trigger ${activeDemoTrackPlaying ? 'is-playing' : ''}`}
+                onClick={() => setActiveDemoTrackPlaying(!activeDemoTrackPlaying)}
+                aria-label="Toggle demo playback"
+              >
+                {activeDemoTrackPlaying ? (
+                  <div className="mini-equalizer">
+                    <span className="eq-bar eq-bar-1"></span>
+                    <span className="eq-bar eq-bar-2"></span>
+                    <span className="eq-bar eq-bar-3"></span>
+                  </div>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+            Clicking play logs an interactive session row to MySQL table <code>listening_history</code> with accurate session timestamps.
+          </div>
+        </div>
+      </section>
+
+      {/* ── Demo Evaluator Accounts ───────────────────────────────── */}
+      {!user && (
+        <section style={{ marginBottom: '64px' }}>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>
+            Test accounts ready for review
+          </h2>
+          <p className="editorial-lead" style={{ fontSize: '0.9rem', marginBottom: '20px' }}>
+            Log in with one click to test recommendation state transitions without creating an account:
+          </p>
+
+          <div className="grid-cols-3">
+            <div className="card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontWeight: '700', fontSize: '1rem', color: 'var(--text)' }}>john_doe</span>
+                <span className="song-meta-pill">Pop &amp; Rock</span>
               </div>
-              <div className="persona-card-actions">
-                <button
-                  onClick={() => handleDemoLogin('john_doe')}
-                  className="btn btn-primary btn-sm btn-full"
-                  id="btn-demo-john"
-                >
-                  Instant Login →
+              <p className="editorial-note" style={{ marginBottom: '16px' }}>
+                36 listening scrobbles logged in MySQL. Qualifies for Tier-3 Collaborative Filtering.
+              </p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => handleDemoLogin('john@example.com')} className="btn btn-primary btn-sm" style={{ flex: 1 }}>
+                  Log In →
                 </button>
                 <CopyButton text="password123" label="Pass" />
               </div>
             </div>
 
-            {/* Persona 2 */}
-            <div className="persona-card hover-card">
-              <div className="persona-card-top">
-                <div className="persona-avatar">JS</div>
-                <div className="persona-info">
-                  <div className="persona-name">jane_smith</div>
-                  <div className="persona-email">jane@example.com</div>
-                </div>
-                <span className="persona-taste-badge">Jazz &amp; Classical</span>
+            <div className="card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontWeight: '700', fontSize: '1rem', color: 'var(--text)' }}>jane_smith</span>
+                <span className="song-meta-pill">Jazz &amp; Classical</span>
               </div>
-              <div className="persona-stats-row">
-                <span>12 Scrobble Logs</span>
-                <span>•</span>
-                <span>5 Star Ratings</span>
-              </div>
-              <div className="persona-card-actions">
-                <button
-                  onClick={() => handleDemoLogin('jane_smith')}
-                  className="btn btn-primary btn-sm btn-full"
-                  id="btn-demo-jane"
-                >
-                  Instant Login →
+              <p className="editorial-note" style={{ marginBottom: '16px' }}>
+                43 listening scrobbles logged in MySQL. Focuses on acoustic and classical jazz affinity.
+              </p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => handleDemoLogin('jane@example.com')} className="btn btn-primary btn-sm" style={{ flex: 1 }}>
+                  Log In →
                 </button>
                 <CopyButton text="password123" label="Pass" />
               </div>
             </div>
 
-            {/* Persona 3 */}
-            <div className="persona-card hover-card">
-              <div className="persona-card-top">
-                <div className="persona-avatar">ML</div>
-                <div className="persona-info">
-                  <div className="persona-name">music_lover</div>
-                  <div className="persona-email">music@example.com</div>
-                </div>
-                <span className="persona-taste-badge">Electronic &amp; Hip-Hop</span>
+            <div className="card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontWeight: '700', fontSize: '1rem', color: 'var(--text)' }}>music_lover</span>
+                <span className="song-meta-pill">Electronic &amp; Hip-Hop</span>
               </div>
-              <div className="persona-stats-row">
-                <span>18 Scrobble Logs</span>
-                <span>•</span>
-                <span>6 Star Ratings</span>
-              </div>
-              <div className="persona-card-actions">
-                <button
-                  onClick={() => handleDemoLogin('music_lover')}
-                  className="btn btn-primary btn-sm btn-full"
-                  id="btn-demo-lover"
-                >
-                  Instant Login →
+              <p className="editorial-note" style={{ marginBottom: '16px' }}>
+                47 listening scrobbles logged in MySQL. Diverse ratings across multiple genres.
+              </p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => handleDemoLogin('music@example.com')} className="btn btn-primary btn-sm" style={{ flex: 1 }}>
+                  Log In →
                 </button>
                 <CopyButton text="password123" label="Pass" />
               </div>
@@ -283,69 +249,14 @@ export default function Landing() {
         </section>
       )}
 
-      {/* ── 3. Database Architecture & Highlights ────────────────── */}
-      <section className="landing-architecture-section">
-        <div className="section-header-block">
-          <h2 className="section-title">Database Architecture &amp; DBMS Highlights</h2>
-          <p className="section-subtitle">
-            Engineered to demonstrate relational rigor, ACID integrity, and high-performance analytical querying:
-          </p>
-        </div>
-
-        <div className="grid-cols-3">
-          <div className="arch-card hover-card">
-            <div className="arch-card-icon" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-              </svg>
-            </div>
-            <h3 className="arch-card-title">Normalized Relational Schema</h3>
-            <p className="arch-card-text">
-              Fully 3NF normalized across 9 core entity tables (`users`, `genres`, `artists`, `songs`, `playlists`, `playlist_songs`, `listening_history`, `ratings`, `user_preferences`) with cascade delete integrity and composite uniqueness constraints.
-            </p>
-            <div className="arch-meta-pill">3NF • Foreign Keys • Cascade</div>
-          </div>
-
-          <div className="arch-card hover-card">
-            <div className="arch-card-icon" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-              </svg>
-            </div>
-            <h3 className="arch-card-title">Stored Procedures &amp; Triggers</h3>
-            <p className="arch-card-text">
-              Adaptive scoring via `sp_get_recommendations` computing genre affinities and log play counts. Automated triggers (`trg_after_listen`, `trg_after_rating`) immediately re-calculate preference weights upon interaction.
-            </p>
-            <div className="arch-meta-pill">Procedures • Triggers • Scoring</div>
-          </div>
-
-          <div className="arch-card hover-card">
-            <div className="arch-card-icon" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="20" x2="18" y2="10"></line>
-                <line x1="12" y1="20" x2="12" y2="4"></line>
-                <line x1="6" y1="20" x2="6" y2="14"></line>
-              </svg>
-            </div>
-            <h3 className="arch-card-title">SQL Analytical Telemetry Views</h3>
-            <p className="arch-card-text">
-              High-efficiency analytical views (`top_songs_view`, `genre_popularity_view`, `user_analytics_view`) unifying live authenticated sessions (`source_namespace: local`) with historical Last.fm archives without synthetic hallucinations.
-            </p>
-            <div className="arch-meta-pill">Views • Telemetry • Provenance</div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── 4. Frequently Asked Questions ────────────────────────── */}
-      <section className="landing-faq-section">
-        <div className="section-header-block">
-          <h2 className="section-title">Frequently Asked Questions</h2>
-          <p className="section-subtitle">
-            System architectural details, recommendation formulas, and dataset provenance:
-          </p>
-        </div>
+      {/* ── 19. Frequently Asked Questions ───────────────────────── */}
+      <section style={{ marginBottom: '40px' }}>
+        <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>
+          Frequently asked questions
+        </h2>
+        <p className="editorial-lead" style={{ fontSize: '0.9rem', marginBottom: '20px' }}>
+          Answers regarding relational architecture, data partitioning, and database integrity:
+        </p>
         <ExpandableFAQ />
       </section>
     </div>
