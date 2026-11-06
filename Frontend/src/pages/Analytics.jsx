@@ -69,7 +69,6 @@ export default function Analytics() {
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const dailyData = dayNames.map((name, idx) => {
-    // MySQL DAYOFWEEK: 1=Sun, 2=Mon... 7=Sat
     const match = personal?.daily?.find((d) => d.day === idx + 1);
     return {
       day: name,
@@ -77,7 +76,6 @@ export default function Analytics() {
     };
   });
 
-  // Custom Recharts Tooltip styled with design system
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -108,16 +106,16 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Analytics Tabs */}
-      <div className="tab-list">
+      {/* Analytics Navigation Tabs */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
         <button
-          className={`tab-btn ${activeTab === 'personal' ? 'active' : ''}`}
+          className={`btn ${activeTab === 'personal' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
           onClick={() => setActiveTab('personal')}
         >
           Personal Listening Trends
         </button>
         <button
-          className={`tab-btn ${activeTab === 'global' ? 'active' : ''}`}
+          className={`btn ${activeTab === 'global' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
           onClick={() => setActiveTab('global')}
         >
           Platform Global Trends
@@ -126,23 +124,24 @@ export default function Analytics() {
 
       {activeTab === 'personal' ? (
         <div>
-          {/* Provenance Banner for Personal Telemetry */}
           <div
             style={{
               backgroundColor: 'var(--surface)',
               border: '1px solid var(--border)',
-              borderRadius: '8px',
-              padding: '10px 14px',
-              marginBottom: '18px',
+              borderRadius: 'var(--radius)',
+              padding: '12px 16px',
+              marginBottom: '20px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               fontSize: '0.825rem',
               color: 'var(--text-muted)',
+              flexWrap: 'wrap',
+              gap: '8px',
             }}
           >
             <span>
-              🔒 <strong>Personal Telemetry Source:</strong> Granular application session history (<code style={{ color: 'var(--primary)' }}>source_namespace: local</code>). Every listen reflects real playback duration and timestamps.
+              🔒 <strong>Personal Telemetry Source:</strong> Session history (<code>source_namespace: local</code>). Every listen reflects real playback duration and timestamps.
             </span>
             <span style={{ color: 'var(--secondary)', fontWeight: '600' }}>
               Individual Session Events
@@ -166,14 +165,14 @@ export default function Analytics() {
               <div className="stat-box-label">Listening Minutes Logged</div>
             </div>
             <div className="stat-box">
-              <div className="stat-box-value">
+              <div className="stat-box-value" style={{ color: 'var(--secondary)' }}>
                 {personal?.overview?.avg_given_rating ? Number(personal.overview.avg_given_rating).toFixed(1) : '0.0'} ★
               </div>
               <div className="stat-box-label">Rating Affinity</div>
             </div>
           </div>
 
-          {/* Charts Row: Hourly & Daily */}
+          {/* Charts Row */}
           <div className="grid-cols-2" style={{ marginBottom: '24px' }}>
             <div className="card">
               <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '16px' }}>
@@ -182,11 +181,11 @@ export default function Analytics() {
               <div style={{ height: '240px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={hourlyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1B485E" vertical={false} />
-                    <XAxis dataKey="hour" stroke="#94B7C7" fontSize={11} interval={3} />
-                    <YAxis stroke="#94B7C7" fontSize={11} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2E416E" vertical={false} />
+                    <XAxis dataKey="hour" stroke="#B8C2D9" fontSize={11} interval={3} />
+                    <YAxis stroke="#B8C2D9" fontSize={11} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="listens" fill="#10B981" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="listens" fill="#E4A0A0" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -199,18 +198,18 @@ export default function Analytics() {
               <div style={{ height: '240px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dailyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1B485E" vertical={false} />
-                    <XAxis dataKey="day" stroke="#94B7C7" fontSize={11} />
-                    <YAxis stroke="#94B7C7" fontSize={11} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2E416E" vertical={false} />
+                    <XAxis dataKey="day" stroke="#B8C2D9" fontSize={11} />
+                    <YAxis stroke="#B8C2D9" fontSize={11} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="listens" fill="#A7F3D0" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="listens" fill="#EED9A0" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
           </div>
 
-          {/* Listening Trend Timeline */}
+          {/* Timeline */}
           {personal?.trend?.length > 0 && (
             <div className="card" style={{ marginBottom: '24px' }}>
               <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '16px' }}>
@@ -219,23 +218,23 @@ export default function Analytics() {
               <div style={{ height: '220px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={personal.trend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1B485E" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2E416E" vertical={false} />
                     <XAxis
                       dataKey="date"
-                      stroke="#94B7C7"
+                      stroke="#B8C2D9"
                       fontSize={11}
                       tickFormatter={(val) => val ? val.slice(5) : ''}
                     />
-                    <YAxis stroke="#94B7C7" fontSize={11} />
+                    <YAxis stroke="#B8C2D9" fontSize={11} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="listens" stroke="#10B981" strokeWidth={2} dot={{ fill: '#10B981', r: 3 }} />
+                    <Line type="monotone" dataKey="listens" stroke="#E4A0A0" strokeWidth={2} dot={{ fill: '#E4A0A0', r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
           )}
 
-          {/* Top Genres, Top Artists & Top Songs Tables */}
+          {/* Breakdown Tables */}
           <div className="grid-cols-3">
             <div className="card">
               <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '14px' }}>
@@ -266,7 +265,7 @@ export default function Analytics() {
                         </span>
                         {g.avg_rating > 0 && (
                           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                            {Number(g.avg_rating).toFixed(1)} ★ rating
+                            {Number(g.avg_rating).toFixed(1)} ★
                           </div>
                         )}
                       </div>
@@ -336,7 +335,7 @@ export default function Analytics() {
                           {s.artist_name}
                         </div>
                       </div>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--secondary)', flexShrink: 0 }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--secondary)', flexShrink: 0, marginLeft: '8px' }}>
                         {s.listens} plays
                       </span>
                     </div>
@@ -347,14 +346,13 @@ export default function Analytics() {
           </div>
         </div>
       ) : (
-        /* Global Platform Analytics Tab */
+        /* Global Platform Trends */
         <div>
-          {/* Provenance & Aggregation Level Banner */}
           <div
             style={{
               backgroundColor: 'var(--surface)',
               border: '1px solid var(--border)',
-              borderRadius: '8px',
+              borderRadius: 'var(--radius)',
               padding: '12px 16px',
               marginBottom: '20px',
               fontSize: '0.825rem',
@@ -366,15 +364,14 @@ export default function Analytics() {
               📊 Multi-Tier Data Source & Aggregation Transparency
             </div>
             <div>
-              Platform analytics strictly partition and identify data origins:
-              <strong style={{ color: 'var(--primary)' }}> Live App Activity</strong> (granular interactive sessions & ratings: <code>source_namespace = 'local'</code>),
-              <strong style={{ color: 'var(--secondary)' }}> Imported Historical Dataset</strong> (granular scrobbles & user profiles: <code>source_namespace = 'lastfm'</code>), and
-              <strong style={{ color: 'var(--text)' }}> Pre-Aggregated Catalog Counts</strong> (coarse frequency totals without synthetic timestamps).
+              Platform analytics partition data origins into:
+              <strong style={{ color: 'var(--primary)' }}> Live App Activity</strong> (<code>source_namespace = 'local'</code>),
+              <strong style={{ color: 'var(--secondary)' }}> Imported Dataset</strong> (<code>source_namespace = 'lastfm'</code>), and
+              <strong style={{ color: 'var(--text)' }}> Catalog Totals</strong> (pre-aggregated frequency counts).
             </div>
           </div>
 
-          {/* User & Catalog Provenance KPI Row */}
-          <div className="grid-cols-4" style={{ marginBottom: '16px' }}>
+          <div className="grid-cols-4" style={{ marginBottom: '24px' }}>
             <div className="stat-box">
               <div className="stat-box-value">{global?.totals?.registered_app_users || 0}</div>
               <div className="stat-box-label">Active App Users (local)</div>
@@ -393,48 +390,19 @@ export default function Analytics() {
             </div>
           </div>
 
-          {/* Play Telemetry Breakdown by Aggregation Level Row */}
-          <div className="grid-cols-4" style={{ marginBottom: '24px' }}>
-            <div className="stat-box">
-              <div className="stat-box-value" style={{ color: 'var(--primary)' }}>
-                {global?.totals?.live_app_listens || 0}
-              </div>
-              <div className="stat-box-label">Live App Sessions (Granular)</div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-box-value" style={{ color: 'var(--secondary)' }}>
-                {global?.totals?.imported_scrobbles || 0}
-              </div>
-              <div className="stat-box-label">Historical Scrobbles (Granular)</div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-box-value">
-                {global?.totals?.aggregated_plays || 0}
-              </div>
-              <div className="stat-box-label">Pre-Aggregated Plays (Coarse)</div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-box-value">
-                {global?.totals?.total_listens || 0}
-              </div>
-              <div className="stat-box-label">Combined Platform Listens</div>
-            </div>
-          </div>
-
-          {/* Global Most Played & Trending Genres */}
           <div className="grid-cols-2" style={{ marginBottom: '24px' }}>
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <h3 style={{ fontSize: '1rem', fontWeight: '700' }}>
-                  🔥 Most Played Songs (from <code style={{ color: 'var(--primary)' }}>top_songs_view</code>)
+                  🔥 Most Played Songs
                 </h3>
-                <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>Granular + Aggregated</span>
+                <span className="badge-provenance">top_songs_view</span>
               </div>
               {!global?.mostPlayed || global.mostPlayed.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No song play history recorded yet.</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No songs recorded.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {global.mostPlayed.map((song, i) => (
+                  {global.mostPlayed.slice(0, 8).map((song, i) => (
                     <div
                       key={song.id}
                       style={{
@@ -454,16 +422,9 @@ export default function Analytics() {
                           {song.artist_name} • {song.genre_name}
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
-                          {song.play_count} plays
-                        </span>
-                        {song.rating_count > 0 && (
-                          <div style={{ fontSize: '0.7rem', color: 'var(--secondary)' }}>
-                            {Number(song.avg_rating).toFixed(1)} ★ ({song.rating_count})
-                          </div>
-                        )}
-                      </div>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
+                        {song.play_count} plays
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -473,12 +434,12 @@ export default function Analytics() {
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <h3 style={{ fontSize: '1rem', fontWeight: '700' }}>
-                  📊 Genre Popularity (from <code style={{ color: 'var(--secondary)' }}>genre_popularity_view</code>)
+                  📊 Genre Popularity
                 </h3>
-                <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>Catalog Totals</span>
+                <span className="badge-provenance">genre_popularity_view</span>
               </div>
               {!global?.genrePopularity || global.genrePopularity.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No genre popularity data recorded yet.</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No genre data recorded.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {global.genrePopularity.map((g, i) => (
@@ -498,113 +459,11 @@ export default function Analytics() {
                           {i + 1}. {g.name}
                         </span>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          {g.song_count} songs • {Number(g.avg_rating || 0).toFixed(1)} ★ avg
+                          {g.song_count} songs
                         </div>
                       </div>
                       <span style={{ fontSize: '0.8rem', color: 'var(--secondary)' }}>
                         {g.total_plays || 0} plays
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Global Top Rated Songs & Active Listeners */}
-          <div className="grid-cols-2" style={{ marginBottom: '24px' }}>
-            <div className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: '700' }}>
-                  ⭐ Highest Rated Songs (from <code style={{ color: 'var(--secondary)' }}>ratings</code>)
-                </h3>
-                <span style={{ fontSize: '0.725rem', color: 'var(--primary)', fontWeight: '600' }}>App Users Only</span>
-              </div>
-              {!global?.topRated || global.topRated.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No rated songs found in catalog.</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {global.topRated.map((song, i) => (
-                    <div
-                      key={`rated-${song.id}-${i}`}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '8px 12px',
-                        backgroundColor: 'var(--bg)',
-                        borderRadius: 'var(--radius)',
-                      }}
-                    >
-                      <div style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>
-                          {i + 1}. {song.title}
-                        </span>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          {song.artist_name} • {song.genre_name}
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '12px' }}>
-                        <span style={{ fontSize: '0.85rem', color: 'var(--secondary)', fontWeight: '600' }}>
-                          {Number(song.avg_rating || 0).toFixed(1)} ★
-                        </span>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                          {song.rating_count} {song.rating_count === 1 ? 'rating' : 'ratings'}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: '700' }}>
-                  🏆 Most Active Listeners
-                </h3>
-                <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>Account Provenance</span>
-              </div>
-              {!global?.activeUsers || global.activeUsers.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No active listener history found.</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {global.activeUsers.map((u, i) => (
-                    <div
-                      key={`user-${u.id}-${i}`}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '8px 12px',
-                        backgroundColor: 'var(--bg)',
-                        borderRadius: 'var(--radius)',
-                      }}
-                    >
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>
-                            #{i + 1} {u.username}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: '0.7rem',
-                              padding: '1px 6px',
-                              borderRadius: '8px',
-                              backgroundColor: (u.source_namespace === 'lastfm') ? 'rgba(238, 217, 160, 0.15)' : 'rgba(228, 160, 160, 0.15)',
-                              color: (u.source_namespace === 'lastfm') ? 'var(--secondary)' : 'var(--primary)',
-                              border: `1px solid ${(u.source_namespace === 'lastfm') ? 'var(--secondary)' : 'var(--primary)'}`,
-                            }}
-                          >
-                            {u.source_namespace === 'lastfm' ? 'Last.fm Profile' : 'App User'}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          Account ID #{u.id}
-                        </div>
-                      </div>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
-                        {u.total_listens} plays
                       </span>
                     </div>
                   ))}

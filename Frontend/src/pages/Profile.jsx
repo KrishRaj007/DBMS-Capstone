@@ -43,7 +43,7 @@ export default function Profile() {
     <div className="page-container" id="main-content">
       <div className="page-header">
         <div>
-          <h1 className="page-title">User Profile & Account</h1>
+          <h1 className="page-title">User Profile &amp; Account</h1>
           <p className="page-subtitle">
             Relational DBMS account details, personalized preferences, and rated song history.
           </p>
@@ -67,7 +67,7 @@ export default function Profile() {
               height: '64px',
               borderRadius: 'var(--radius)',
               backgroundColor: 'var(--primary)',
-              color: 'var(--bg)',
+              color: '#1B2A4A',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -82,8 +82,8 @@ export default function Profile() {
             <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>{user?.username}</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{user?.email}</p>
             <div style={{ marginTop: '6px' }}>
-              <span className="song-meta-pill" style={{ fontSize: '0.75rem' }}>
-                Account ID: #{user?.id} • Standard Listener
+              <span className="badge-provenance">
+                Account ID: #{user?.id} • Standard Listener (local)
               </span>
             </div>
           </div>
@@ -98,21 +98,21 @@ export default function Profile() {
         </div>
         <div className="stat-box">
           <div className="stat-box-value">{stats?.unique_songs || 0}</div>
-          <div className="stat-box-label">Distinct Songs</div>
+          <div className="stat-box-label">Distinct Tracks</div>
         </div>
         <div className="stat-box">
           <div className="stat-box-value">{ratings.length}</div>
           <div className="stat-box-label">Songs Rated</div>
         </div>
         <div className="stat-box">
-          <div className="stat-box-value">
+          <div className="stat-box-value" style={{ color: 'var(--secondary)' }}>
             {stats?.avg_given_rating ? Number(stats.avg_given_rating).toFixed(1) : '0.0'} ★
           </div>
           <div className="stat-box-label">Average Score</div>
         </div>
       </div>
 
-      {/* Your Rated Songs */}
+      {/* Rated Songs */}
       <div className="card" style={{ marginBottom: '32px' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '16px' }}>
           Your Rated Songs ({ratings.length})
