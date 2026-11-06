@@ -99,7 +99,7 @@ export function BackToTop() {
       setVisible(window.scrollY > 300);
     };
     window.addEventListener('scroll', checkScroll, { passive: true });
-    return () => window.removeEventListener('checkScroll', checkScroll);
+    return () => window.removeEventListener('scroll', checkScroll);
   }, []);
 
   const scrollToTop = () => {
@@ -139,12 +139,9 @@ export function CookieBanner() {
       <p>
         We use essential cookies and local storage to personalize song recommendations and save your listening sessions.
       </p>
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button className="btn btn-primary btn-sm" onClick={accept} id="cookie-accept-btn">
+      <div className="cookie-banner-actions">
+        <button onClick={accept} className="btn btn-primary btn-sm">
           Accept
-        </button>
-        <button className="btn btn-secondary btn-sm" onClick={() => setShow(false)}>
-          Dismiss
         </button>
       </div>
     </div>
@@ -167,63 +164,41 @@ export function CopyButton({ text, label = 'Copy' }) {
 
   return (
     <button
-      type="button"
       onClick={handleCopy}
-      className={`copy-btn ${copied ? 'copied' : ''}`}
-      title={copied ? 'Copied to clipboard!' : `Copy ${label}`}
+      className={`copy-button ${copied ? 'copied' : ''}`}
+      title={`Copy ${label}`}
+      type="button"
     >
-      {copied ? (
-        <>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-          Copied
-        </>
-      ) : (
-        <>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-          {label}
-        </>
-      )}
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+      <span>{copied ? 'Copied!' : label}</span>
     </button>
   );
 }
 
-// ── 6. Loading Animations ────────────────────────────────────
-export function LoadingSpinner({ message = 'Loading music data...' }) {
-  return (
-    <div className="loader-container">
-      <div className="spinner" />
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{message}</p>
-    </div>
-  );
-}
-
-// ── 13. Password Visibility Toggle Input ─────────────────────
-export function PasswordInput({ id, value, onChange, placeholder = 'Enter password', required = true, name = 'password' }) {
+// ── 13. Password Visibility Toggle Input ──────────────────────
+export function PasswordInput({ id, value, onChange, placeholder = 'Password', required = false }) {
   const [visible, setVisible] = useState(false);
 
   return (
-    <div className="password-field">
+    <div className="password-input-wrapper">
       <input
         type={visible ? 'text' : 'password'}
         id={id}
-        name={name}
-        className="form-input"
         value={value}
         onChange={onChange}
         placeholder={placeholder}
         required={required}
+        className="form-input"
       />
       <button
         type="button"
         className="password-toggle-btn"
         onClick={() => setVisible(!visible)}
         aria-label={visible ? 'Hide password' : 'Show password'}
-        tabIndex="-1"
+        tabIndex={-1}
       >
         {visible ? (
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -242,24 +217,26 @@ export function PasswordInput({ id, value, onChange, placeholder = 'Enter passwo
 }
 
 // ── 17. Confirmation Modal ───────────────────────────────────
-export function ConfirmModal({ isOpen, title, message, confirmText = 'Confirm', onConfirm, onCancel, isDanger = false }) {
+export function ConfirmModal({ isOpen, title, message, confirmText = 'Confirm', onConfirm, onCancel }) {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <div className="modal-box">
-        <h3 id="modal-title" className="modal-title">{title}</h3>
-        <p className="modal-body">{message}</p>
-        <div className="modal-actions">
-          <button type="button" className="btn btn-secondary" onClick={onCancel} id="modal-cancel-btn">
+    <div className="modal-backdrop" onClick={onCancel} role="dialog" aria-modal="true">
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">{title}</h3>
+          <button className="modal-close" onClick={onCancel} aria-label="Close modal">
+            ✕
+          </button>
+        </div>
+        <div className="modal-body">
+          <p>{message}</p>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary btn-sm" onClick={onCancel}>
             Cancel
           </button>
-          <button
-            type="button"
-            className={`btn ${isDanger ? 'btn-danger' : 'btn-primary'}`}
-            onClick={onConfirm}
-            id="modal-confirm-btn"
-          >
+          <button className="btn btn-danger btn-sm" onClick={onConfirm}>
             {confirmText}
           </button>
         </div>
@@ -268,68 +245,59 @@ export function ConfirmModal({ isOpen, title, message, confirmText = 'Confirm', 
   );
 }
 
-// ── 18. Last Updated Date ────────────────────────────────────
+// ── 18. Last Updated Date Widget ─────────────────────────────
 export function LastUpdatedDate() {
-  // Show today's actual date — no hardcoded values
-  const lastUpdated = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
+  const formatted = new Date().toLocaleDateString('en-US', {
+    month: 'short',
     day: 'numeric',
+    year: 'numeric',
   });
+
   return (
-    <div className="last-updated-text">
-      <span>Database Schema v1.0 • Last updated: {lastUpdated}</span>
+    <div className="last-updated-widget">
+      <span>Database Schema v1.0 • Last updated: {formatted}</span>
     </div>
   );
 }
 
-// ── 19. Expandable FAQ ───────────────────────────────────────
+// ── 19. Expandable FAQ Component ─────────────────────────────
 export function ExpandableFAQ() {
   const [openIndex, setOpenIndex] = useState(0);
 
   const faqs = [
     {
-      q: "How does the DBMS recommendation algorithm work?",
-      a: "The system computes personalized song suggestions using MySQL stored procedure `sp_get_recommendations`. It combines user genre weights (updated via database triggers), song ratings, and log-transformed listening frequency, while pruning songs already listened to frequently."
+      q: 'How are personalized recommendations calculated?',
+      a: 'BeatPulse utilizes a 3-tier progressive recommendation engine implemented inside MySQL stored procedure `sp_get_recommendations`. New users receive catalog popularity baselines; listeners with 2-4 plays receive content-based genre affinity recommendations; and active listeners with 5+ interactions receive collaborative filtering recommendations blended from co-listening patterns.',
     },
     {
-      q: "Which database views and stored procedures are used?",
-      a: "The schema includes `top_songs_view`, `genre_popularity_view`, and `user_analytics_view`. Automated routines include `sp_get_recommendations` and `sp_update_preferences`, alongside triggers `trg_after_listen` and `trg_after_rating`."
+      q: 'What is the underlying relational schema structure?',
+      a: 'The system is normalized to 3NF across 9 entity tables: `users`, `genres`, `artists`, `songs`, `playlists`, `playlist_songs`, `listening_history`, `ratings`, and `user_preferences`. Foreign key constraints enforce referential integrity with CASCADE deletions.',
     },
     {
-      q: "Can I create and manage custom playlists?",
-      a: "Yes. Playlists support full CRUD operations. You can add songs, reorder positions with relational foreign key constraints, make them public or private, and delete them with cascading integrity."
+      q: 'How does live playback telemetry persist?',
+      a: 'Every interactive song play sends an authenticated POST request to `/api/listen`. MySQL triggers automatically capture the session into `listening_history` with `source_namespace = "local"` and incrementally re-calculate user genre preference affinity scores.',
     },
     {
-      q: "How are listening analytics calculated?",
-      a: "Personal analytics calculate total play duration, unique song diversity, hourly listen distribution (0-23h), day-of-week trends, and genre affinity directly from indexed timestamp logs."
+      q: 'Are historical Last.fm records mixed with app users?',
+      a: 'No. The system maintains strict source namespace partitioning. Historical dataset users and scrobbles are tagged under `source_namespace = "lastfm"`, whereas registered application users operate exclusively under `source_namespace = "local"`.',
     },
-    {
-      q: "How do I switch between dark and light themes?",
-      a: "Click the sun/moon toggle icon in the top header. Your preference is preserved across browser sessions in localStorage."
-    }
   ];
 
   return (
-    <div className="faq-accordion" id="faq-accordion">
+    <div className="faq-list">
       {faqs.map((faq, index) => {
         const isOpen = openIndex === index;
         return (
-          <div key={index} className={`faq-accordion-item ${isOpen ? 'active' : ''}`}>
+          <div key={index} className="faq-item">
             <button
-              type="button"
-              className="faq-accordion-header"
+              className="faq-question-btn"
               onClick={() => setOpenIndex(isOpen ? -1 : index)}
               aria-expanded={isOpen}
             >
               <span>{faq.q}</span>
-              <span className="faq-accordion-icon">▼</span>
+              <span>{isOpen ? '−' : '+'}</span>
             </button>
-            {isOpen && (
-              <div className="faq-accordion-content">
-                <p>{faq.a}</p>
-              </div>
-            )}
+            {isOpen && <div className="faq-answer">{faq.a}</div>}
           </div>
         );
       })}
@@ -337,90 +305,72 @@ export function ExpandableFAQ() {
   );
 }
 
-// ── 20. Floating Contact Button & Modal ───────────────────────
+// ── 20. Floating Contact Button & Drawer ─────────────────────
 export function FloatingContact() {
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [msg, setMsg] = useState('');
-  const [email, setEmail] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!email || !msg) return;
+    if (!msg.trim()) return;
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
-      setOpen(false);
       setMsg('');
-      setEmail('');
-    }, 2000);
+      setOpen(false);
+    }, 1800);
   };
 
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
-        className="floating-contact-btn"
-        aria-label="Contact system admin"
-        title="Contact Capstone Admin"
-        id="floating-contact-btn"
+        onClick={() => setOpen(!open)}
+        className="floating-contact-trigger"
+        aria-label="Evaluator feedback & contact"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
+        <span>💬 Evaluator Note</span>
       </button>
 
       {open && (
-        <div className="modal-overlay" role="dialog" aria-modal="true">
-          <div className="modal-box">
-            <h3 className="modal-title">Contact DBMS Project Team</h3>
-            <p className="modal-body">
-              Have feedback, questions about the database normalization, or query performance? Send us a note.
-            </p>
-
-            {submitted ? (
-              <div className="form-success-banner">
-                ✓ Thank you! Your feedback message has been logged.
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="contact-email">Your Email</label>
-                  <input
-                    id="contact-email"
-                    type="email"
-                    className="form-input"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="user@example.com"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="contact-message">Message / Feedback</label>
-                  <textarea
-                    id="contact-message"
-                    className="form-input"
-                    rows="3"
-                    value={msg}
-                    onChange={(e) => setMsg(e.target.value)}
-                    placeholder="Share your thoughts on the recommendation system..."
-                    required
-                  />
-                </div>
-                <div className="modal-actions">
-                  <button type="button" className="btn btn-secondary" onClick={() => setOpen(false)}>
-                    Close
-                  </button>
-                  <button type="submit" className="btn btn-primary" id="contact-submit-btn">
-                    Send Message
-                  </button>
-                </div>
-              </form>
-            )}
+        <div className="floating-contact-drawer">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <strong style={{ fontSize: '0.9rem', color: 'var(--text)' }}>Evaluator Feedback</strong>
+            <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)' }}>
+              ✕
+            </button>
           </div>
+          {submitted ? (
+            <div className="form-success-banner" style={{ margin: 0 }}>
+              Feedback received for capstone review!
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <textarea
+                className="form-input"
+                rows="3"
+                placeholder="Leave notes on queries, triggers, or recommendation fidelity..."
+                value={msg}
+                onChange={(e) => setMsg(e.target.value)}
+                required
+              />
+              <button type="submit" className="btn btn-primary btn-sm">
+                Send Note
+              </button>
+            </form>
+          )}
         </div>
       )}
     </>
+  );
+}
+
+// ── 6. Loading Spinner ───────────────────────────────────────
+export function LoadingSpinner({ message = 'Loading relational records...' }) {
+  return (
+    <div className="loading-spinner-wrapper" role="status">
+      <div className="spinner-circle" />
+      <span className="loading-message">{message}</span>
+    </div>
   );
 }
