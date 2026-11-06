@@ -24,16 +24,16 @@ export default function Auth({ initialMode = 'login' }) {
     try {
       if (isLogin) {
         await login(email, password);
-        setSuccessMsg('Login successful! Redirecting to dashboard...');
+        setSuccessMsg('Welcome back! Loading your library...');
       } else {
         await register(username, email, password);
-        setSuccessMsg('Account created successfully! Redirecting...');
+        setSuccessMsg('Account created successfully! Loading your library...');
       }
       setTimeout(() => {
         navigate('/dashboard');
-      }, 700);
+      }, 500);
     } catch (err) {
-      setErrorMsg(err.response?.data?.error || 'Authentication failed. Please check your credentials.');
+      setErrorMsg(err.response?.data?.error || 'Authentication failed. Please verify credentials.');
     } finally {
       setSubmitting(false);
     }
@@ -48,54 +48,42 @@ export default function Auth({ initialMode = 'login' }) {
   };
 
   return (
-    <div className="auth-page" id="main-content">
-      <div className="auth-card">
-        {/* Brand & Provenance Badge */}
-        <div className="auth-brand-badge">
-          <div className="auth-brand-icon" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-            </svg>
-          </div>
-          <span className="auth-system-tag">DBMS Telemetry Portal</span>
+    <div className="page-container" id="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 180px)' }}>
+      <div className="card" style={{ maxWidth: '440px', width: '100%', padding: '32px' }}>
+        <div style={{ marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '1.65rem', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>
+            {isLogin ? 'Sign in to BeatPulse' : 'Create an account'}
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>
+            {isLogin
+              ? 'Enter your email and password to access your personalized recommendations.'
+              : 'Sign up to track your listening history and discover new music.'}
+          </p>
         </div>
 
-        <h1 className="auth-title">
-          {isLogin ? 'Sign In to BeatPulse' : 'Create an Account'}
-        </h1>
-        <p className="auth-subtitle">
-          {isLogin
-            ? 'Enter your credentials to access personalized recommendations and listening telemetry.'
-            : 'Join the music recommendation DBMS platform with 18,000+ tracks.'}
-        </p>
-
-        {/* Form Error Banner (Feature 16) */}
         {errorMsg && (
-          <div className="form-error-banner" role="alert" id="auth-error-banner">
+          <div className="form-error-banner" role="alert">
             <span>✕</span>
             <span>{errorMsg}</span>
           </div>
         )}
 
-        {/* Form Success Banner (Feature 15) */}
         {successMsg && (
-          <div className="form-success-banner" role="status" id="auth-success-banner">
+          <div className="form-success-banner" role="status">
             <span>✓</span>
             <span>{successMsg}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={handleSubmit}>
           {!isLogin && (
             <div className="form-group">
-              <label className="form-label" htmlFor="auth-username">
-                Username
-              </label>
+              <label className="form-label" htmlFor="auth-username">Username</label>
               <input
                 id="auth-username"
                 type="text"
                 className="form-input"
-                placeholder="e.g. soundtracker"
+                placeholder="e.g. alex_music"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -104,9 +92,7 @@ export default function Auth({ initialMode = 'login' }) {
           )}
 
           <div className="form-group">
-            <label className="form-label" htmlFor="auth-email">
-              Email Address
-            </label>
+            <label className="form-label" htmlFor="auth-email">Email address</label>
             <input
               id="auth-email"
               type="email"
@@ -120,9 +106,8 @@ export default function Auth({ initialMode = 'login' }) {
 
           <div className="form-group">
             <label className="form-label" htmlFor="auth-password">
-              Password {isLogin ? '' : '(min. 6 characters)'}
+              Password {isLogin ? '' : '(at least 6 characters)'}
             </label>
-            {/* Password Visibility Toggle (Feature 13) */}
             <PasswordInput
               id="auth-password"
               value={password}
@@ -134,33 +119,33 @@ export default function Auth({ initialMode = 'login' }) {
 
           <button
             type="submit"
-            className="btn btn-primary auth-submit-btn"
+            className="btn btn-primary btn-full"
             disabled={submitting}
-            id="auth-submit-btn"
+            style={{ marginTop: '8px', padding: '11px' }}
           >
-            {submitting ? 'Please wait...' : isLogin ? 'Sign In' : 'Create Account'}
+            {submitting ? 'Authenticating...' : isLogin ? 'Sign In' : 'Create Account'}
           </button>
         </form>
 
-        <div className="auth-footer">
+        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
           {isLogin ? (
             <p>
-              Don&apos;t have an account?{' '}
+              Don't have an account?{' '}
               <button
                 type="button"
-                className="auth-toggle-link"
                 onClick={() => { setIsLogin(false); setErrorMsg(''); setSuccessMsg(''); }}
+                style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', padding: 0 }}
               >
                 Register
               </button>
             </p>
           ) : (
             <p>
-              Already registered?{' '}
+              Already have an account?{' '}
               <button
                 type="button"
-                className="auth-toggle-link"
                 onClick={() => { setIsLogin(true); setErrorMsg(''); setSuccessMsg(''); }}
+                style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', padding: 0 }}
               >
                 Sign In
               </button>
@@ -168,50 +153,40 @@ export default function Auth({ initialMode = 'login' }) {
           )}
         </div>
 
-        {/* Evaluator Demo Credentials Quick Autofill Deck */}
-        <div className="auth-demo-deck">
-          <div className="auth-demo-header">
-            <span className="auth-demo-label">Evaluator One-Click Autofill</span>
-            <span className="auth-demo-badge">Pre-Seeded Accounts</span>
+        {/* Demo Accounts Quick-Select */}
+        <div style={{ marginTop: '28px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>
+              Quick test accounts
+            </span>
           </div>
-          <div className="auth-demo-grid">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <button
               type="button"
-              className={`auth-demo-chip ${email === 'john@example.com' ? 'active' : ''}`}
+              className="btn btn-secondary btn-sm"
+              style={{ justifyContent: 'space-between', width: '100%', padding: '8px 12px' }}
               onClick={() => fillDemo('john@example.com', 'password123')}
             >
-              <span className="demo-chip-avatar">JD</span>
-              <div className="demo-chip-info">
-                <div className="demo-chip-name">john_doe</div>
-                <div className="demo-chip-taste">john@example.com • Pop &amp; Rock</div>
-              </div>
-              <span className="demo-chip-action">Autofill →</span>
+              <span style={{ fontWeight: '600' }}>john_doe</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Pop &amp; Rock (36 plays)</span>
             </button>
-
             <button
               type="button"
-              className={`auth-demo-chip ${email === 'jane@example.com' ? 'active' : ''}`}
+              className="btn btn-secondary btn-sm"
+              style={{ justifyContent: 'space-between', width: '100%', padding: '8px 12px' }}
               onClick={() => fillDemo('jane@example.com', 'password123')}
             >
-              <span className="demo-chip-avatar">JS</span>
-              <div className="demo-chip-info">
-                <div className="demo-chip-name">jane_smith</div>
-                <div className="demo-chip-taste">jane@example.com • Jazz &amp; Classical</div>
-              </div>
-              <span className="demo-chip-action">Autofill →</span>
+              <span style={{ fontWeight: '600' }}>jane_smith</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Jazz &amp; Classical (43 plays)</span>
             </button>
-
             <button
               type="button"
-              className={`auth-demo-chip ${email === 'music@example.com' ? 'active' : ''}`}
-              onClick={() => fillDemo('music@example.com', 'password123')}
+              className="btn btn-secondary btn-sm"
+              style={{ justifyContent: 'space-between', width: '100%', padding: '8px 12px' }}
+              onClick={() => fillDemo('krish@gmail.com', 'password123')}
             >
-              <span className="demo-chip-avatar">ML</span>
-              <div className="demo-chip-info">
-                <div className="demo-chip-name">music_lover</div>
-                <div className="demo-chip-taste">music@example.com • Electronic &amp; Hip-Hop</div>
-              </div>
-              <span className="demo-chip-action">Autofill →</span>
+              <span style={{ fontWeight: '600' }}>Krish Raj</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>krish@gmail.com</span>
             </button>
           </div>
         </div>
