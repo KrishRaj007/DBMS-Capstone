@@ -85,7 +85,7 @@ export default function Library() {
     } else {
       next.delete(key);
     }
-    next.set('page', '1'); // reset page on filter change
+    next.set('page', '1');
     setSearchParams(next);
   };
 
@@ -97,11 +97,11 @@ export default function Library() {
         <div>
           <h1 className="page-title">Song Library</h1>
           <p className="page-subtitle">
-            Browse, search, and rate songs across diverse genres. Every listen updates your relational preference matrix.
+            Browse, search, and rate tracks across diverse genres. Every listen updates your relational preference matrix.
           </p>
         </div>
         <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-          Showing {songs.length} of {total} indexed tracks
+          Showing {songs.length} of {total.toLocaleString()} catalog tracks
         </div>
       </div>
 
@@ -125,7 +125,6 @@ export default function Library() {
               value={selectedGenre}
               onChange={(e) => updateParam('genre', e.target.value)}
               aria-label="Filter by genre"
-              id="genre-filter-select"
             >
               <option value="">All Genres</option>
               {genres.map((g) => (
@@ -142,7 +141,6 @@ export default function Library() {
               value={selectedArtist}
               onChange={(e) => updateParam('artist', e.target.value)}
               aria-label="Filter by artist"
-              id="artist-filter-select"
             >
               <option value="">All Artists</option>
               {artists.map((a) => (
@@ -153,16 +151,15 @@ export default function Library() {
             </select>
           </div>
 
-          <div style={{ flex: '1', minWidth: '150px' }}>
+          <div style={{ flex: '1', minWidth: '160px' }}>
             <select
               className="form-input"
               value={selectedSort}
               onChange={(e) => updateParam('sort', e.target.value)}
               aria-label="Sort tracks by"
-              id="sort-select"
             >
               <option value="title">Sort: Title (A-Z)</option>
-              <option value="popular">Sort: Most Popular (Scrobbles)</option>
+              <option value="popular">Sort: Most Popular</option>
               <option value="rating">Sort: Highest Rated</option>
               <option value="recent">Sort: Recently Added</option>
               <option value="duration">Sort: Longest Duration</option>
@@ -255,7 +252,6 @@ export default function Library() {
           onClick={() => setArtistModal({ open: false, data: null, loading: false })}
           role="dialog"
           aria-modal="true"
-          aria-label="Artist Profile"
         >
           <div
             className="modal-card"
@@ -277,7 +273,6 @@ export default function Library() {
               <LoadingSpinner message="Querying artist record from MySQL..." />
             ) : artistModal.data ? (
               <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {/* Artist Header */}
                 <div>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                     <div>
@@ -285,36 +280,21 @@ export default function Library() {
                         {artistModal.data.name}
                       </h2>
                       {artistModal.data.mbid && (
-                        <span
-                          className="badge-provenance"
-                          title="MusicBrainz Identifier from Last.fm dataset"
-                          style={{ fontSize: '0.7rem' }}
-                        >
+                        <span className="badge-provenance">
                           MBID: {artistModal.data.mbid}
                         </span>
                       )}
                     </div>
-                    <span
-                      style={{
-                        fontSize: '0.7rem',
-                        padding: '2px 8px',
-                        borderRadius: '8px',
-                        backgroundColor: 'rgba(238, 217, 160, 0.12)',
-                        color: 'var(--secondary)',
-                        border: '1px solid var(--secondary)',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
+                    <span className="song-meta-pill">
                       {artistModal.data.source_namespace === 'lastfm' ? 'Last.fm Import' : 'App Catalog'}
                     </span>
                   </div>
 
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '10px', lineHeight: '1.6' }}>
-                    {artistModal.data.bio || 'No biography available for this artist in the current dataset.'}
+                    {artistModal.data.bio || 'No biography available for this artist.'}
                   </p>
                 </div>
 
-                {/* Stats Row */}
                 <div className="grid-cols-2" style={{ gap: '12px' }}>
                   <div className="stat-box">
                     <div className="stat-box-value">{artistModal.data.song_count || 0}</div>
@@ -326,10 +306,9 @@ export default function Library() {
                   </div>
                 </div>
 
-                {/* Top Tracks */}
                 {artistModal.data.topTracks && artistModal.data.topTracks.length > 0 && (
                   <div>
-                    <h4 style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <h4 style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                       Top Tracks
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -343,7 +322,6 @@ export default function Library() {
                             padding: '8px 12px',
                             backgroundColor: 'var(--bg)',
                             borderRadius: 'var(--radius)',
-                            gap: '8px',
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden' }}>
@@ -372,11 +350,7 @@ export default function Library() {
                   </div>
                 )}
               </div>
-            ) : (
-              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                Artist data could not be loaded. Please try again.
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}
