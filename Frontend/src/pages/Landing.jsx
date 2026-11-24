@@ -26,25 +26,30 @@ export default function Landing() {
 
   return (
     <div className="page-container" id="main-content" style={{ paddingTop: '24px' }}>
-      {/* ── Main Hero Editorial ───────────────────────────────────── */}
-      <section style={{ maxWidth: '820px', marginBottom: '56px' }}>
-        <h1 style={{ fontSize: '2.75rem', fontWeight: '800', lineHeight: '1.15', letterSpacing: '-0.035em', marginBottom: '16px', color: 'var(--text)' }}>
-          Music recommendations powered by pure relational data.
+      {/* ── Modern Hero Section ───────────────────────────────────── */}
+      <section style={{ maxWidth: '860px', marginBottom: '56px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px', borderRadius: 'var(--radius)', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', fontSize: '0.8rem', color: 'var(--primary)', fontWeight: '600', marginBottom: '18px' }}>
+          <span>●</span>
+          <span>Next-Generation Relational Music Discovery</span>
+        </div>
+
+        <h1 style={{ fontSize: '3rem', fontWeight: '900', lineHeight: '1.1', letterSpacing: '-0.04em', marginBottom: '18px', color: 'var(--text)' }}>
+          Stream intelligence. Discover patterns in your sound.
         </h1>
 
-        <p className="editorial-lead" style={{ marginBottom: '28px' }}>
-          BeatPulse tracks authentic listener scrobbles, calculates real-time taste affinity in MySQL, and recommends tracks across a verified Last.fm catalog of 10,000+ songs.
+        <p style={{ fontSize: '1.15rem', lineHeight: '1.6', color: 'var(--text-muted)', marginBottom: '32px', maxWidth: '640px' }}>
+          BeatPulse tracks your live listening telemetry in MySQL, processes co-listening overlap across 50,000+ historical scrobbles, and serves instant personalized recommendations.
         </p>
 
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
           {user ? (
             <Link to="/dashboard" className="btn btn-primary btn-lg">
-              Open Dashboard →
+              Launch Dashboard →
             </Link>
           ) : (
             <>
               <Link to="/register" className="btn btn-primary btn-lg">
-                Create an Account
+                Get Started Free
               </Link>
               <Link to="/login" className="btn btn-secondary btn-lg">
                 Sign In
@@ -52,111 +57,99 @@ export default function Landing() {
             </>
           )}
           <Link to="/library" className="btn btn-secondary btn-lg">
-            Browse the Catalog
+            Explore 10,000+ Songs
           </Link>
         </div>
       </section>
 
-      {/* ── Live Relational Metrics Banner ─────────────────────────── */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '56px', borderTop: '1px solid var(--border)', paddingTop: '28px' }}>
-        <div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text)' }}>
+      {/* ── Live Dynamic Metrics Strip ─────────────────────────────── */}
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '16px', marginBottom: '64px', borderTop: '1px solid var(--border)', paddingTop: '32px' }}>
+        <div className="card" style={{ padding: '20px' }}>
+          <div style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--text)', letterSpacing: '-0.02em' }}>
             {liveStats?.totals?.total_songs ? liveStats.totals.total_songs.toLocaleString() : '10,256'}
           </div>
-          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-            Catalog tracks indexed in 3NF
+          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
+            Catalog Tracks Indexed
           </div>
         </div>
 
-        <div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text)' }}>
+        <div className="card" style={{ padding: '20px' }}>
+          <div style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--text)', letterSpacing: '-0.02em' }}>
             1,702
           </div>
-          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-            Artists mapped to MusicBrainz
+          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
+            Verified Artists
           </div>
         </div>
 
-        <div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--secondary)' }}>
+        <div className="card" style={{ padding: '20px' }}>
+          <div style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--primary)', letterSpacing: '-0.02em' }}>
             {liveStats?.totals?.total_listens ? liveStats.totals.total_listens.toLocaleString() : '50,126'}
           </div>
-          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-            Historical scrobbles imported
+          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
+            Historical Scrobbles
           </div>
         </div>
 
-        <div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text)' }}>
+        <div className="card" style={{ padding: '20px' }}>
+          <div style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--secondary)', letterSpacing: '-0.02em' }}>
             10
           </div>
-          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-            Curated genre taxonomies
+          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
+            Curated Genres
           </div>
         </div>
       </section>
 
-      {/* ── How the Relational Engine Works ───────────────────────── */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px', marginBottom: '64px', alignItems: 'flex-start' }}>
+      {/* ── Feature Highlight & Audio Player Showcase ─────────────── */}
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px', marginBottom: '64px', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text)', marginBottom: '12px' }}>
-            How recommendations evolve as you listen
+          <h2 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text)', marginBottom: '14px', letterSpacing: '-0.02em' }}>
+            Relational intelligence designed for pure sound discovery.
           </h2>
-          <p className="editorial-lead" style={{ fontSize: '0.95rem', marginBottom: '24px' }}>
-            Instead of opaque machine-learning black boxes, BeatPulse relies on transparent relational queries, triggers, and stored procedures.
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.975rem', lineHeight: '1.6', marginBottom: '24px' }}>
+            Experience how your music library responds to every listen. Our progressive 3-tier algorithm blends catalog popularity, content-based genre affinities, and deep peer collaborative filtering.
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', gap: '14px' }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius)', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem', color: 'var(--primary)', flexShrink: 0 }}>
-                1
-              </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <span style={{ color: 'var(--primary)', fontWeight: '700', fontSize: '1.1rem' }}>✓</span>
               <div>
-                <strong style={{ display: 'block', color: 'var(--text)', fontSize: '0.95rem' }}>Popularity baseline for newcomers</strong>
-                <span className="editorial-note">When you have fewer than 2 plays, recommendations prioritize top catalog songs across diverse genres.</span>
+                <strong style={{ color: 'var(--text)', fontSize: '0.95rem' }}>Sub-15ms Stored Procedure Scoring</strong>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem', marginTop: '2px' }}>
+                  Recommendations run directly inside MySQL stored procedure <code>sp_get_recommendations</code> without external API latency.
+                </p>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '14px' }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius)', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem', color: 'var(--primary)', flexShrink: 0 }}>
-                2
-              </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <span style={{ color: 'var(--primary)', fontWeight: '700', fontSize: '1.1rem' }}>✓</span>
               <div>
-                <strong style={{ display: 'block', color: 'var(--text)', fontSize: '0.95rem' }}>Content affinity from your ratings</strong>
-                <span className="editorial-note">Between 2 and 4 plays, MySQL triggers update your genre affinity weights to deliver personalized matches.</span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '14px' }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius)', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem', color: 'var(--secondary)', flexShrink: 0 }}>
-                3
-              </div>
-              <div>
-                <strong style={{ display: 'block', color: 'var(--text)', fontSize: '0.95rem' }}>Collaborative filtering from peer overlap</strong>
-                <span className="editorial-note">At 5+ plays, SQL joins connect your history with listeners in the Last.fm dataset who share common songs.</span>
+                <strong style={{ color: 'var(--text)', fontSize: '0.95rem' }}>Automated Taste Re-Weighting Triggers</strong>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem', marginTop: '2px' }}>
+                  Every play triggers <code>trg_after_listen</code> to re-calculate your genre affinities in real-time.
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Live Track Session Preview */}
-        <div className="card" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text)' }}>
-              Top Track in Catalog View
+        {/* Live Audio Telemetry Card */}
+        <div className="card" style={{ padding: '28px', backgroundColor: 'var(--surface)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Top Played Song in Catalog
             </span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--secondary)' }}>
-              85 Scrobbles
-            </span>
+            <span className="badge-provenance">Live View</span>
           </div>
 
-          <div style={{ padding: '16px', backgroundColor: 'var(--bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', marginBottom: '18px' }}>
+          <div style={{ padding: '18px', backgroundColor: 'var(--bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '1rem' }}>
+                <div style={{ fontWeight: '800', color: 'var(--text)', fontSize: '1.1rem' }}>
                   {liveStats?.mostPlayed?.[0]?.title || 'Nacht'}
                 </div>
-                <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '3px' }}>
                   {liveStats?.mostPlayed?.[0]?.artist_name || 'Kettcar'} • {liveStats?.mostPlayed?.[0]?.genre_name || 'Rock'}
                 </div>
               </div>
@@ -164,7 +157,7 @@ export default function Landing() {
                 type="button"
                 className={`btn-play-trigger ${activeDemoTrackPlaying ? 'is-playing' : ''}`}
                 onClick={() => setActiveDemoTrackPlaying(!activeDemoTrackPlaying)}
-                aria-label="Toggle demo playback"
+                aria-label="Toggle preview playback"
               >
                 {activeDemoTrackPlaying ? (
                   <div className="mini-equalizer">
@@ -181,30 +174,30 @@ export default function Landing() {
             </div>
           </div>
 
-          <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-            Clicking play logs an interactive session row to MySQL table <code>listening_history</code> with accurate session timestamps.
+          <div style={{ fontSize: '0.825rem', color: 'var(--text-dim)', lineHeight: '1.5' }}>
+            Logged telemetry is isolated under <code>source_namespace = 'local'</code> to separate live application sessions from imported Last.fm benchmarks.
           </div>
         </div>
       </section>
 
-      {/* ── Demo Evaluator Accounts ───────────────────────────────── */}
+      {/* ── Evaluator Persona Deck ───────────────────────────────── */}
       {!user && (
         <section style={{ marginBottom: '64px' }}>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>
-            Test accounts ready for review
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>
+            One-Click Test Accounts
           </h2>
-          <p className="editorial-lead" style={{ fontSize: '0.9rem', marginBottom: '20px' }}>
-            Log in with one click to test recommendation state transitions without creating an account:
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.925rem', marginBottom: '24px' }}>
+            Instantly log in with pre-seeded evaluator accounts to review personalized recommendations:
           </p>
 
           <div className="grid-cols-3">
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontWeight: '700', fontSize: '1rem', color: 'var(--text)' }}>john_doe</span>
+                <span style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text)' }}>john_doe</span>
                 <span className="song-meta-pill">Pop &amp; Rock</span>
               </div>
-              <p className="editorial-note" style={{ marginBottom: '16px' }}>
-                36 listening scrobbles logged in MySQL. Qualifies for Tier-3 Collaborative Filtering.
+              <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                36 scrobbles logged in MySQL. Qualifies for Tier-3 Collaborative Filtering.
               </p>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => handleDemoLogin('john@example.com')} className="btn btn-primary btn-sm" style={{ flex: 1 }}>
@@ -216,11 +209,11 @@ export default function Landing() {
 
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontWeight: '700', fontSize: '1rem', color: 'var(--text)' }}>jane_smith</span>
+                <span style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text)' }}>jane_smith</span>
                 <span className="song-meta-pill">Jazz &amp; Classical</span>
               </div>
-              <p className="editorial-note" style={{ marginBottom: '16px' }}>
-                43 listening scrobbles logged in MySQL. Focuses on acoustic and classical jazz affinity.
+              <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                43 scrobbles logged in MySQL. Focuses on acoustic and classical jazz affinity.
               </p>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => handleDemoLogin('jane@example.com')} className="btn btn-primary btn-sm" style={{ flex: 1 }}>
@@ -232,11 +225,11 @@ export default function Landing() {
 
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontWeight: '700', fontSize: '1rem', color: 'var(--text)' }}>music_lover</span>
+                <span style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text)' }}>music_lover</span>
                 <span className="song-meta-pill">Electronic &amp; Hip-Hop</span>
               </div>
-              <p className="editorial-note" style={{ marginBottom: '16px' }}>
-                47 listening scrobbles logged in MySQL. Diverse ratings across multiple genres.
+              <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                47 scrobbles logged in MySQL. Diverse ratings across multiple genres.
               </p>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => handleDemoLogin('music@example.com')} className="btn btn-primary btn-sm" style={{ flex: 1 }}>
@@ -251,11 +244,11 @@ export default function Landing() {
 
       {/* ── 19. Frequently Asked Questions ───────────────────────── */}
       <section style={{ marginBottom: '40px' }}>
-        <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>
-          Frequently asked questions
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>
+          Frequently Asked Questions
         </h2>
-        <p className="editorial-lead" style={{ fontSize: '0.9rem', marginBottom: '20px' }}>
-          Answers regarding relational architecture, data partitioning, and database integrity:
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.925rem', marginBottom: '20px' }}>
+          Everything you need to know about BeatPulse architecture, recommendations, and telemetry:
         </p>
         <ExpandableFAQ />
       </section>

@@ -1,60 +1,83 @@
 /* ============================================================
-   BeatPulse — Music Recommendation & Listening Analytics
-   Human-Crafted Music & DBMS Experience
-   Font: "Inter" only (no fallback)
-   Background: #1B2A4A | Surface: #24345A | Primary: #E4A0A0
-   Secondary: #EED9A0 | Text: #FFFFFF | Text-muted: #B8C2D9
-   Danger: #EF4444 | Radius: 8px everywhere
+   BeatPulse — Modern Music Streaming & Listening Analytics
+   Generated via UI/UX Pro Max Engine
+   Dark Mode (OLED) & Electric Accent Architecture
+   Typography: "Inter"
+   Border Radius: 8px consistent
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-/* ── Design Tokens ──────────────────────────────────────────── */
+/* ── Modern Design Tokens ───────────────────────────────────── */
 :root {
-  --bg:              #1B2A4A;
-  --surface:         #24345A;
-  --surface-hover:   #2C3E6B;
-  --surface-active:  #1F2E52;
-  --primary:         #E4A0A0;
-  --primary-hover:   #EEB8B8;
-  --primary-subtle:  rgba(228, 160, 160, 0.12);
-  --secondary:       #EED9A0;
-  --secondary-hover: #F6E6BC;
-  --secondary-subtle:rgba(238, 217, 160, 0.12);
-  --text:            #FFFFFF;
-  --text-muted:      #B8C2D9;
+  --bg:              #0B0B14;
+  --surface:         #141422;
+  --surface-hover:   #1C1C30;
+  --surface-active:  #252540;
+  
+  --primary:         #22C55E;
+  --primary-hover:   #16A34A;
+  --primary-subtle:  rgba(34, 197, 94, 0.12);
+  
+  --secondary:       #6366F1;
+  --secondary-hover: #4F46E5;
+  --secondary-subtle:rgba(99, 102, 241, 0.14);
+
+  --accent:          #38BDF8;
+  
+  --text:            #F8FAFC;
+  --text-muted:      #94A3B8;
+  --text-dim:        #64748B;
+  
   --danger:          #EF4444;
   --danger-hover:    #DC2626;
   --danger-subtle:   rgba(239, 68, 68, 0.14);
+  
   --radius:          8px;
-  --border:          rgba(184, 194, 217, 0.14);
-  --border-strong:   rgba(184, 194, 217, 0.28);
-  --border-focus:    #E4A0A0;
+  --border:          rgba(255, 255, 255, 0.08);
+  --border-strong:   rgba(255, 255, 255, 0.16);
+  --border-focus:    #22C55E;
+
+  --shadow-sm:       0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md:       0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg:       0 10px 25px rgba(0, 0, 0, 0.5);
 }
 
 [data-theme="light"] {
-  --bg:              #F4F7FB;
+  --bg:              #F8FAFC;
   --surface:         #FFFFFF;
-  --surface-hover:   #F0F4FA;
-  --surface-active:  #E8EEF7;
-  --primary:         #B86B6B;
-  --primary-hover:   #A05555;
-  --primary-subtle:  rgba(184, 107, 107, 0.12);
-  --secondary:       #8F7335;
-  --secondary-hover: #755D28;
-  --secondary-subtle:rgba(143, 115, 53, 0.12);
-  --text:            #1B2A4A;
-  --text-muted:      #4A5B7D;
+  --surface-hover:   #F1F5F9;
+  --surface-active:  #E2E8F0;
+  
+  --primary:         #16A34A;
+  --primary-hover:   #15803D;
+  --primary-subtle:  rgba(22, 163, 74, 0.12);
+  
+  --secondary:       #4F46E5;
+  --secondary-hover: #4338CA;
+  --secondary-subtle:rgba(79, 70, 229, 0.12);
+
+  --accent:          #0284C7;
+
+  --text:            #0F172A;
+  --text-muted:      #475569;
+  --text-dim:        #94A3B8;
+  
   --danger:          #DC2626;
   --danger-hover:    #B91C1C;
   --danger-subtle:   rgba(220, 38, 38, 0.12);
+  
   --radius:          8px;
-  --border:          #D3DEEE;
-  --border-strong:   #BAC9DE;
-  --border-focus:    #B86B6B;
+  --border:          #E2E8F0;
+  --border-strong:   #CBD5E1;
+  --border-focus:    #16A34A;
+
+  --shadow-sm:       0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md:       0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg:       0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
-/* ── Reset & Typography ─────────────────────────────────────── */
+/* ── Base Setup ─────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -73,25 +96,24 @@ body {
   font-family: 'Inter';
   background-color: var(--bg);
   color: var(--text);
-  line-height: 1.6;
+  line-height: 1.5;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4, h5, h6, p, span, a, button, input, select, textarea, div {
   font-family: 'Inter';
 }
 
-/* ── Browser Surfaces Theming ───────────────────────────────── */
+/* ── Custom Scrollbars & Focus Rings ────────────────────────── */
 ::selection {
   background-color: var(--primary);
-  color: #1B2A4A;
+  color: #0B0B14;
 }
 
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: var(--bg);
@@ -110,12 +132,12 @@ h1, h2, h3, h4, h5, h6, p, span, a, button, input, select, textarea, div {
 }
 
 a {
-  color: var(--primary);
+  color: var(--text);
   text-decoration: none;
   transition: color 0.15s ease;
 }
 a:hover {
-  color: var(--secondary);
+  color: var(--primary);
 }
 
 button {
@@ -124,7 +146,7 @@ button {
   outline: none;
   border-radius: var(--radius);
   font-family: 'Inter';
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 input, select, textarea {
@@ -133,7 +155,7 @@ input, select, textarea {
   font-family: 'Inter';
 }
 
-/* ── App Layout ─────────────────────────────────────────────── */
+/* ── Global Layout Wrapper ──────────────────────────────────── */
 .app-layout {
   display: flex;
   flex-direction: column;
@@ -142,9 +164,9 @@ input, select, textarea {
 }
 
 .page-container {
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 32px 24px 64px;
+  padding: 32px 24px 72px;
   width: 100%;
 }
 
@@ -158,32 +180,19 @@ input, select, textarea {
 }
 
 .page-title {
-  font-size: 1.9rem;
+  font-size: 2rem;
   font-weight: 800;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
   color: var(--text);
+  line-height: 1.15;
   margin-bottom: 6px;
 }
 
 .page-subtitle {
   color: var(--text-muted);
   font-size: 0.95rem;
-  max-width: 680px;
+  max-width: 700px;
   line-height: 1.55;
-}
-
-/* ── Humanized Content Blocks ───────────────────────────────── */
-.editorial-lead {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  color: var(--text-muted);
-  max-width: 620px;
-}
-
-.editorial-note {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  line-height: 1.5;
 }
 
 /* ── Card Surfaces ──────────────────────────────────────────── */
@@ -192,7 +201,7 @@ input, select, textarea {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 24px;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .card:hover {
@@ -200,14 +209,14 @@ input, select, textarea {
 }
 
 .hover-card {
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 .hover-card:hover {
   background-color: var(--surface-hover);
   border-color: var(--border-strong);
 }
 
-/* ── Layout Grids ───────────────────────────────────────────── */
+/* ── Responsive Grids ───────────────────────────────────────── */
 .grid-cols-2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -241,15 +250,15 @@ input, select, textarea {
   }
 }
 
-/* ── Button Hierarchy ───────────────────────────────────────── */
+/* ── Modern Button Styling ──────────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 9px 18px;
+  padding: 10px 18px;
   font-weight: 600;
-  font-size: 0.885rem;
+  font-size: 0.9rem;
   border-radius: var(--radius);
   border: 1px solid transparent;
   white-space: nowrap;
@@ -257,7 +266,7 @@ input, select, textarea {
 
 .btn-primary {
   background-color: var(--primary);
-  color: #1B2A4A;
+  color: #0B0B14;
 }
 .btn-primary:hover:not(:disabled) {
   background-color: var(--primary-hover);
@@ -282,13 +291,13 @@ input, select, textarea {
 }
 
 .btn-sm {
-  padding: 6px 12px;
+  padding: 6px 14px;
   font-size: 0.8rem;
 }
 
 .btn-lg {
   padding: 12px 24px;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .btn-full {
@@ -296,11 +305,11 @@ input, select, textarea {
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* ── Form Controls & Polish ─────────────────────────────────── */
+/* ── Form Controls & Banners ────────────────────────────────── */
 .form-group {
   margin-bottom: 18px;
 }
@@ -316,11 +325,11 @@ input, select, textarea {
 
 .form-input {
   width: 100%;
-  padding: 10px 14px;
+  padding: 11px 14px;
   background-color: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 0.925rem;
   border-radius: var(--radius);
   transition: border-color 0.15s ease;
 }
@@ -330,11 +339,9 @@ input, select, textarea {
 }
 
 .form-input::placeholder {
-  color: var(--text-muted);
-  opacity: 0.7;
+  color: var(--text-dim);
 }
 
-/* ── Form Notification Banners ──────────────────────────────── */
 .form-error-banner {
   display: flex;
   align-items: center;
@@ -353,9 +360,9 @@ input, select, textarea {
   display: flex;
   align-items: center;
   gap: 10px;
-  background-color: var(--secondary-subtle);
-  border: 1px solid var(--secondary);
-  color: var(--secondary);
+  background-color: var(--primary-subtle);
+  border: 1px solid var(--primary);
+  color: var(--primary);
   padding: 12px 16px;
   border-radius: var(--radius);
   margin-bottom: 20px;
@@ -370,7 +377,7 @@ input, select, textarea {
   left: 16px;
   z-index: 10000;
   background-color: var(--primary);
-  color: #1B2A4A;
+  color: #0B0B14;
   padding: 8px 16px;
   border-radius: var(--radius);
   font-weight: 700;
@@ -405,7 +412,7 @@ input, select, textarea {
   z-index: 1000;
   background-color: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 0 24px;
+  padding: 0 28px;
   height: 64px;
   display: flex;
   align-items: center;
@@ -415,22 +422,22 @@ input, select, textarea {
 .header-left, .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
 }
 
 .header-logo {
   display: flex;
   align-items: center;
-  gap: 9px;
-  font-size: 1.15rem;
-  font-weight: 800;
+  gap: 10px;
+  font-size: 1.2rem;
+  font-weight: 900;
   color: var(--text);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
 }
 
 .header-logo svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   fill: var(--primary);
 }
 
@@ -442,7 +449,7 @@ input, select, textarea {
 }
 
 .header-nav a {
-  padding: 7px 12px;
+  padding: 7px 14px;
   color: var(--text-muted);
   font-size: 0.875rem;
   font-weight: 500;
@@ -472,28 +479,28 @@ input, select, textarea {
   background-color: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 7px 12px 7px 32px;
+  padding: 8px 14px 8px 34px;
   font-size: 0.85rem;
   width: 210px;
   border-radius: var(--radius);
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .site-search input:focus {
-  width: 270px;
+  width: 280px;
   border-color: var(--border-focus);
 }
 
 .site-search-icon {
   position: absolute;
-  left: 10px;
-  color: var(--text-muted);
+  left: 11px;
+  color: var(--text-dim);
   pointer-events: none;
   display: flex;
   align-items: center;
 }
 
-/* ── 1. Dark Mode Toggle ────────────────────────────────────── */
+/* ── 1. Theme Toggle ────────────────────────────────────────── */
 .theme-toggle {
   background-color: var(--bg);
   color: var(--text-muted);
@@ -506,7 +513,7 @@ input, select, textarea {
   border-radius: var(--radius);
 }
 .theme-toggle:hover {
-  color: var(--primary);
+  color: var(--text);
   border-color: var(--border-strong);
 }
 
@@ -567,7 +574,7 @@ input, select, textarea {
   }
 }
 
-/* ── Authentic Relational Badges ────────────────────────────── */
+/* ── System & Music Badges ──────────────────────────────────── */
 .badge-provenance {
   display: inline-flex;
   align-items: center;
@@ -594,22 +601,23 @@ input, select, textarea {
   border-radius: var(--radius);
 }
 
-/* ── Metric Display ─────────────────────────────────────────── */
+/* ── KPI Stat Boxes ─────────────────────────────────────────── */
 .stat-box {
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px 20px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
 }
 
 .stat-box-value {
-  font-size: 1.85rem;
+  font-size: 2rem;
   font-weight: 800;
   color: var(--text);
   line-height: 1.1;
   margin-bottom: 4px;
+  letter-spacing: -0.02em;
 }
 
 .stat-box-label {
@@ -620,11 +628,11 @@ input, select, textarea {
 
 .stat-box-sub {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--text-dim);
   margin-top: 4px;
 }
 
-/* ── Track Row ──────────────────────────────────────────────── */
+/* ── Song Item Row ──────────────────────────────────────────── */
 .song-row {
   display: flex;
   align-items: center;
@@ -656,8 +664,8 @@ input, select, textarea {
 }
 
 .btn-play-trigger {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius);
   background-color: var(--bg);
   border: 1px solid var(--border);
@@ -671,17 +679,17 @@ input, select, textarea {
 
 .btn-play-trigger:hover {
   background-color: var(--primary);
-  color: #1B2A4A;
+  color: #0B0B14;
   border-color: var(--primary);
 }
 
 .btn-play-trigger.is-playing {
   background-color: var(--primary);
-  color: #1B2A4A;
+  color: #0B0B14;
   border-color: var(--primary);
 }
 
-/* Equalizer with smooth cubic-bezier */
+/* Equalizer Bars */
 .mini-equalizer {
   display: flex;
   align-items: flex-end;
@@ -704,15 +712,15 @@ input, select, textarea {
 }
 
 .song-art-badge {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   background-color: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted);
+  color: var(--text-dim);
   flex-shrink: 0;
 }
 
@@ -759,7 +767,7 @@ input, select, textarea {
 
 .song-duration-label {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--text-dim);
 }
 
 /* ── Star Rating ────────────────────────────────────────────── */
@@ -781,17 +789,17 @@ input, select, textarea {
 
 .star-btn.active,
 .star-btn:hover {
-  color: var(--secondary);
+  color: #F59E0B;
 }
 
-/* ── Dropdowns ──────────────────────────────────────────────── */
+/* ── Dropdown Menus ─────────────────────────────────────────── */
 .playlist-dropdown-menu {
   position: absolute;
   right: 0;
   top: 100%;
   margin-top: 6px;
   background-color: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   padding: 10px;
   z-index: 100;
@@ -821,9 +829,9 @@ input, select, textarea {
 }
 
 .copy-button.copied {
-  background-color: var(--secondary-subtle);
-  border-color: var(--secondary);
-  color: var(--secondary);
+  background-color: var(--primary-subtle);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 /* ── 13. Password Input ─────────────────────────────────────── */
@@ -857,7 +865,7 @@ input, select, textarea {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(27, 42, 74, 0.78);
+  background-color: rgba(11, 11, 20, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -925,7 +933,7 @@ input, select, textarea {
   width: 40px;
   height: 40px;
   background-color: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   color: var(--text);
   border-radius: var(--radius);
   display: flex;
@@ -944,7 +952,7 @@ input, select, textarea {
 
 .back-to-top-btn:hover {
   background-color: var(--primary);
-  color: #1B2A4A;
+  color: #0B0B14;
   border-color: var(--primary);
 }
 
@@ -978,7 +986,7 @@ input, select, textarea {
   bottom: 24px;
   left: 24px;
   background-color: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   color: var(--text);
   padding: 8px 14px;
   border-radius: var(--radius);
@@ -991,7 +999,7 @@ input, select, textarea {
 }
 
 .floating-contact-trigger:hover {
-  border-color: var(--border-strong);
+  border-color: var(--primary);
   color: var(--primary);
 }
 
@@ -1062,7 +1070,7 @@ input, select, textarea {
 .spinner-circle {
   width: 28px;
   height: 28px;
-  border: 2px solid var(--border);
+  border: 2px solid var(--border-strong);
   border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -1080,7 +1088,7 @@ input, select, textarea {
 /* ── 18. Last Updated Date Widget ───────────────────────────── */
 .last-updated-widget {
   font-size: 0.775rem;
-  color: var(--text-muted);
+  color: var(--text-dim);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1091,7 +1099,7 @@ input, select, textarea {
   margin-top: auto;
   background-color: var(--surface);
   border-top: 1px solid var(--border);
-  padding: 22px 24px;
+  padding: 24px 28px;
   display: flex;
   justify-content: space-between;
   align-items: center;
