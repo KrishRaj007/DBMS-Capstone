@@ -5,7 +5,7 @@ A full-stack relational database management system (DBMS) capstone project engin
 
 ---
 
-## 🗄️ Database Architecture & DBMS Features
+## Database Architecture & DBMS Features
 
 ### 1. Relational Entities (3NF Normalized)
 - **`users`** — User authentication, unique email/username, bcrypt password hashes, profile avatars.
@@ -33,7 +33,7 @@ A full-stack relational database management system (DBMS) capstone project engin
 
 ---
 
-## 🚀 Quick Setup & Running Locally
+## Quick Setup & Running Locally
 
 ### Prerequisites
 - Node.js (v18+)
@@ -62,7 +62,6 @@ npm run init-db
 ```bash
 cd Backend
 npm run dev
-# API running at http://localhost:5000
 ```
 
 ### Step 4: Start the Frontend Application
@@ -70,12 +69,11 @@ In a separate terminal:
 ```bash
 cd Frontend
 npm run dev
-# Frontend running at http://localhost:5173
 ```
 
 ---
 
-## 👤 Pre-seeded Demo Accounts
+## Pre-seeded Demo Accounts
 
 | Username | Email | Password | Music Taste |
 |---|---|---|---|
@@ -83,26 +81,20 @@ npm run dev
 | `jane_smith` | jane@example.com | `password123` | Jazz & Classical |
 | `music_lover` | music@example.com | `password123` | Electronic & Hip-Hop |
 
-*(Instant one-click demo login buttons are also provided directly on the landing and sign-in pages)*
+Instant one-click demo login buttons are also provided directly on the landing and sign-in pages.
 
 ---
 
-## 🎨 Design System & Color Tokens
+## Design System & Tokens
 
 - **Font**: Inter (no fallback fonts)
-- **Background**: `#1B2A4A`
-- **Surface/Card**: `#24345A`
-- **Primary Accent**: `#E4A0A0`
-- **Secondary Accent**: `#EED9A0`
-- **Text (Main)**: `#FFFFFF`
-- **Text (Muted)**: `#B8C2D9`
-- **Danger**: `#EF4444`
+- **Theme**: Dark Mode (OLED) + Light Theme Support
 - **Border Radius**: Consistent `8px` everywhere
-- **No Gradients / No Random Shadows**: Clean flat tokens adhering strictly to project guidelines.
+- Clean flat design adhering strictly to project guidelines.
 
 ---
 
-## 🧩 20 Standard Baseline Components Checklist
+## 20 Standard Baseline Components Checklist
 
 1. [x] **Dark Mode Toggle**: Persistent dark/light theme switch in header (`ThemeToggle`)
 2. [x] **Simple Cookie Banner**: Dismissible consent banner with local storage persistence (`CookieBanner`)
@@ -114,11 +106,11 @@ npm run dev
 8. [x] **Scroll Progress Bar**: Real-time reading/scroll indicator bar along the viewport top (`ScrollProgress`)
 9. [x] **Copy Button**: One-click clipboard copy for song links, playlist URLs, and demo credentials (`CopyButton`)
 10. [x] **Print Stylesheet**: Clean black-and-white `@media print` formatting for academic reports
-11. [x] **Sticky Header**: Fixed navigation bar with glassmorphic blur and brand icon (`Header`)
+11. [x] **Sticky Header**: Fixed navigation bar with blur and brand icon (`Header`)
 12. [x] **Skip to Content Link**: Accessible keyboard navigation jump link (`.skip-link`)
 13. [x] **Password Visibility Toggle**: Show/hide toggle on password inputs (`PasswordInput`)
 14. [x] **UTM Tracking**: Inbound campaign parameter capture and session telemetry (`useUtmTracking`)
-15. [x] **Form Success State**: Green/accent success confirmation notifications and alerts
+15. [x] **Form Success State**: Success confirmation notifications and alerts
 16. [x] **Form Error State**: Clear error validation messages and server response banners
 17. [x] **Confirmation Modals**: Dialogs for destructive actions like playlist or track deletion (`ConfirmModal`)
 18. [x] **Last Updated Date**: Schema version and timestamp display in footer and profile (`LastUpdatedDate`)
@@ -127,7 +119,7 @@ npm run dev
 
 ---
 
-## 🔄 Data Pipeline, ETL Architecture & Ingestion Guide
+## Data Pipeline, ETL Architecture & Ingestion Guide
 
 The project features an enterprise-grade, memory-bounded Python ETL pipeline located in `pipeline/` designed to ingest, clean, deduplicate, and load high-volume telemetry datasets (such as the **Last.fm 1K user dataset** containing 19.1+ million scrobbles and 992 user profiles) without RAM exhaustion or primary key collisions.
 
@@ -169,7 +161,7 @@ flowchart LR
    - **Database Priming**: Pre-loads existing artists, songs, and users from the database into memory indexes on startup to prevent re-inserting records during repeated runs.
    - **Users**: Deduplicated strictly by canonical `user_id`.
    - **Artists**: Deduplicated by MusicBrainz ID (MBID) or normalized lowercase name; enriches existing records when MBIDs are discovered.
-   - **Songs**: Deduplicated strictly scoped to `artist_id` via `(artist_id, track_mbid)` or `(artist_id, normalized_title)`. Songs sharing the same title across different artists (e.g., "Hello" by Adele vs Lionel Richie) are **never** merged.
+   - **Songs**: Deduplicated strictly scoped to `artist_id` via `(artist_id, track_mbid)` or `(artist_id, normalized_title)`. Songs sharing the same title across different artists are not merged.
    - **Scrobbles**: Deduplicated by composite key `(user_id, timestamp, song_id)`.
 
 6. **Load (`pipeline/load.py`)**:
@@ -229,11 +221,11 @@ Raw datasets are placed in `lastfm-dataset-1K/lastfm-dataset-1K/` or specified v
 
 ### 4. Data Cleanup Rules Summary
 
-1. **Zero Hallucinated Values**: Fields missing in the raw dataset (`album`, `duration_seconds`, `release_date`) are strictly stored as `NULL`. No dummy text (such as `"Unknown Album"` or `0000-00-00`) is fabricated.
+1. **Zero Hallucinated Values**: Fields missing in the raw dataset (`album`, `duration_seconds`, `release_date`) are strictly stored as `NULL`. No dummy text is fabricated.
 2. **Sentinel Null Translations**: The values `""`, `"null"`, `"None"`, `"\\N"`, `"-"`, and `"undefined"` are converted to `None` / SQL `NULL`.
 3. **Text Sanitization**: NFKC normalization converts compatibility characters, unescapes HTML tokens (`&quot;` &rarr; `"`, `&amp;` &rarr; `&`), and collapses redundant whitespace.
-4. **Multi-Artist Handling**: Splits collaborations like `"David Bowie & Queen"` into primary artist `"David Bowie"`, collaborator `"Queen"`, and saves `"David Bowie & Queen"` in `original_credit`.
-5. **Version Marker Preservation**: Strings such as `(Live at Wembley)`, `[2009 Remaster]`, and `(Acoustic)` are retained in song titles to prevent merging distinct performances.
+4. **Multi-Artist Handling**: Splits collaborations into primary artist while preserving original catalog credit string.
+5. **Version Marker Preservation**: Strings such as `(Live at Wembley)` and `(Acoustic)` are retained in song titles to prevent merging distinct performances.
 
 ---
 
@@ -242,7 +234,6 @@ Raw datasets are placed in `lastfm-dataset-1K/lastfm-dataset-1K/` or specified v
 #### Option A: SQLite (Default Standalone Mode)
 The SQLite database requires no external server setup and is automatically initialized by the pipeline:
 ```bash
-# Run ETL pipeline (initializes schema and loads 50,000 scrobbles)
 python -m pipeline.run --limit 50000
 ```
 
@@ -254,7 +245,6 @@ python -m pipeline.run --limit 50000
 cd Backend
 npm run migrate
 ```
-*(Executes `Backend/db/migrations/001_adapt_schema.sql` adding namespaces, staging tables, and indexes without dropping existing data).*
 
 ---
 
@@ -284,4 +274,3 @@ python -m pipeline.run --verify-only
 # 6. Run pipeline unit test suite
 python -m unittest discover -s pipeline/tests -p "test_*.py" -v
 ```
-
