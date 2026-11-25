@@ -190,8 +190,8 @@ if (fs.existsSync(importedPath)) {
 
 const hashedPassword = bcrypt.hashSync('password123', 10);
 const USERS = [
-  { id: 1, username: 'john_doe',   email: 'john@example.com',  password_hash: hashedPassword, source_namespace: 'local', created_at: new Date() },
-  { id: 2, username: 'jane_smith', email: 'jane@example.com',   password_hash: hashedPassword, source_namespace: 'local', created_at: new Date() },
+  { id: 1, username: 'Ajay Kumar',   email: 'john@example.com',  password_hash: hashedPassword, source_namespace: 'local', created_at: new Date() },
+  { id: 2, username: 'Ravi Raj', email: 'jane@example.com',   password_hash: hashedPassword, source_namespace: 'local', created_at: new Date() },
   { id: 3, username: 'music_lover', email: 'music@example.com', password_hash: hashedPassword, source_namespace: 'local', created_at: new Date() },
 ];
 

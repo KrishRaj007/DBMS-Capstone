@@ -112,8 +112,8 @@ const SONGS = [
 ];
 
 const USERS = [
-  { username: 'john_doe',   email: 'john@example.com',  password: 'password123' },
-  { username: 'jane_smith', email: 'jane@example.com',   password: 'password123' },
+  { username: 'Ajay Kumar',   email: 'john@example.com',  password: 'password123' },
+  { username: 'Ravi Raj', email: 'jane@example.com',   password: 'password123' },
   { username: 'music_lover', email: 'music@example.com', password: 'password123' },
 ];
 
@@ -183,7 +183,7 @@ async function seed() {
 
     const [demoUsers] = await conn.query(
       'SELECT id, username FROM users WHERE username IN (?, ?, ?)',
-      ['john_doe', 'jane_smith', 'music_lover']
+      ['Ajay Kumar', 'Ravi Raj', 'music_lover']
     );
     const demoUserMap = {};
     for (const u of demoUsers) {
@@ -192,7 +192,7 @@ async function seed() {
 
     const [songList] = await conn.query('SELECT id, duration_seconds FROM songs WHERE source_namespace = "local"');
 
-    for (const username of ['john_doe', 'jane_smith', 'music_lover']) {
+    for (const username of ['Ajay Kumar', 'Ravi Raj', 'music_lover']) {
       const userId = demoUserMap[username];
       if (!userId) continue;
 
@@ -221,7 +221,7 @@ async function seed() {
       }
     }
 
-    for (const username of ['john_doe', 'jane_smith', 'music_lover']) {
+    for (const username of ['Ajay Kumar', 'Ravi Raj', 'music_lover']) {
       const userId = demoUserMap[username];
       if (!userId) continue;
 
@@ -244,10 +244,10 @@ async function seed() {
     }
 
     const playlists = [
-      { user: 'john_doe', name: 'Chill Vibes', desc: 'Relaxing tracks for a chill evening' },
-      { user: 'john_doe', name: 'Workout Mix', desc: 'High-energy tracks to pump you up' },
-      { user: 'jane_smith', name: 'Late Night Jazz', desc: 'Smooth jazz for late-night listening' },
-      { user: 'jane_smith', name: 'Indie Favorites', desc: 'Best indie tracks hand-picked' },
+      { user: 'Ajay Kumar', name: 'Chill Vibes', desc: 'Relaxing tracks for a chill evening' },
+      { user: 'Ajay Kumar', name: 'Workout Mix', desc: 'High-energy tracks to pump you up' },
+      { user: 'Ravi Raj', name: 'Late Night Jazz', desc: 'Smooth jazz for late-night listening' },
+      { user: 'Ravi Raj', name: 'Indie Favorites', desc: 'Best indie tracks hand-picked' },
       { user: 'music_lover', name: 'Everything Mix', desc: 'A little bit of everything' },
     ];
 
@@ -277,7 +277,7 @@ async function seed() {
     }
     console.log(`✓ Ensured demo playlists`);
 
-    for (const username of ['john_doe', 'jane_smith', 'music_lover']) {
+    for (const username of ['Ajay Kumar', 'Ravi Raj', 'music_lover']) {
       const userId = demoUserMap[username];
       if (userId) {
         await conn.query('CALL sp_update_preferences(?)', [userId]);
@@ -287,8 +287,8 @@ async function seed() {
 
     console.log('\n🎉 Idempotent Seeding complete!');
     console.log('   Demo accounts:');
-    console.log('   • john_doe   / password123');
-    console.log('   • jane_smith / password123');
+    console.log('   • Ajay Kumar   / password123');
+    console.log('   • Ravi Raj / password123');
     console.log('   • music_lover / password123\n');
   } catch (err) {
     console.error('❌ Seed error:', err);

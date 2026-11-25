@@ -112,8 +112,8 @@ const SONGS = [
 ];
 
 const USERS = [
-  { username: 'john_doe',   email: 'john@example.com',  password: 'password123' },
-  { username: 'jane_smith', email: 'jane@example.com',   password: 'password123' },
+  { username: 'Ajay Kumar',   email: 'john@example.com',  password: 'password123' },
+  { username: 'Ravi Raj', email: 'jane@example.com',   password: 'password123' },
   { username: 'music_lover', email: 'music@example.com', password: 'password123' },
 ];
 
