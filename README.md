@@ -77,8 +77,8 @@ npm run dev
 
 | Username | Email | Password | Music Taste |
 |---|---|---|---|
-| `john_doe` | john@example.com | `password123` | Pop & Rock |
-| `jane_smith` | jane@example.com | `password123` | Jazz & Classical |
+| `Ajay Kumar` | john@example.com | `password123` | Pop & Rock |
+| `Ravi Raj` | jane@example.com | `password123` | Jazz & Classical |
 | `music_lover` | music@example.com | `password123` | Electronic & Hip-Hop |
 
 Instant one-click demo login buttons are also provided directly on the landing and sign-in pages.

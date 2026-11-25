@@ -27,7 +27,7 @@ Unlike typical frontend mock music players or opaque black-box machine learning 
 
 ## Capabilities and Constraints
 
-- **Authentication & Roles**: Session-backed authentication with bcrypt password hashing and pre-seeded demo personas (`john_doe`, `jane_smith`, `music_lover`).
+- **Authentication & Roles**: Session-backed authentication with bcrypt password hashing and pre-seeded demo personas (`Ajay Kumar`, `Ravi Raj`, `music_lover`).
 - **Song Catalog & Discovery**: Search, filter, and pagination across 18,000+ catalog tracks and 3,300+ artists mapped to a 10-genre taxonomy.
 - **Multi-Strategy Recommendations**:
   1. *Popularity & Diversity Baseline*: Cold-start fallback with log play scaling and Bayesian rating bonus; strict artist diversity limits.
