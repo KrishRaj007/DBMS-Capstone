@@ -20,17 +20,15 @@ class TestIdentifierCollisions(unittest.TestCase):
         by DIFFERENT artists must NOT be merged into the same song entity.
         They must receive distinct, independent song IDs!
         """
-        # Artist 1: Adele
+
         a1 = ArtistEntity("Adele", "cc124b44-4dd9-4b10-be91-5f4f467fb332", "Adele", [], 1, {})
         aid1, _ = self.engine.process_artist(a1)
 
-        # Artist 2: Lionel Richie
         a2 = ArtistEntity("Lionel Richie", "9b24fb59-0f04-43cb-b09b-610156d8e8a6", "Lionel Richie", [], 4, {})
         aid2, _ = self.engine.process_artist(a2)
 
         self.assertNotEqual(aid1, aid2)
 
-        # Song 1: "Hello" by Adele
         s1 = SongEntity(
             title="Hello",
             artist_name="Adele",
@@ -44,7 +42,6 @@ class TestIdentifierCollisions(unittest.TestCase):
         )
         sid1, _ = self.engine.process_song(s1, aid1)
 
-        # Song 2: "Hello" by Lionel Richie
         s2 = SongEntity(
             title="Hello",
             artist_name="Lionel Richie",
@@ -58,16 +55,13 @@ class TestIdentifierCollisions(unittest.TestCase):
         )
         sid2, _ = self.engine.process_song(s2, aid2)
 
-        # Verify they are strictly separate songs!
         self.assertNotEqual(sid1, sid2)
         self.assertEqual(self.engine.stats.songs_created, 2)
         self.assertEqual(self.engine.stats.songs_reused, 0)
 
-        # Verify that retrieving Adele's "Hello" again returns sid1
         sid1_recheck, _ = self.engine.process_song(s1, aid1)
         self.assertEqual(sid1, sid1_recheck)
 
-        # Verify that retrieving Lionel Richie's "Hello" again returns sid2
         sid2_recheck, _ = self.engine.process_song(s2, aid2)
         self.assertEqual(sid2, sid2_recheck)
 
@@ -88,7 +82,6 @@ class TestIdentifierCollisions(unittest.TestCase):
         )
         aid_lastfm, _ = self.engine.process_artist(a_lastfm)
 
-        # A different source (e.g. spotify or local) with source_id 101 for a different artist
         a_local = ArtistEntity(
             name="Different Artist",
             mbid=None,

@@ -32,7 +32,7 @@ class TestIdempotencyAndEmptyDatasets(unittest.TestCase):
             tmp_path = Path(tmp.name)
 
         try:
-            # 0 bytes file
+
             profile_records = list(extract_profiles(tmp_path))
             self.assertEqual(len(profile_records), 0)
 
@@ -48,7 +48,7 @@ class TestIdempotencyAndEmptyDatasets(unittest.TestCase):
 
         try:
             profile_records = list(extract_profiles(tmp_path))
-            self.assertEqual(len(profile_records), 0) # Header consumed, 0 data records
+            self.assertEqual(len(profile_records), 0)
         finally:
             os.remove(tmp_path)
 
@@ -59,10 +59,10 @@ class TestIdempotencyAndEmptyDatasets(unittest.TestCase):
         and not crash or pollute the database.
         """
         bad_rows = [
-            [],                                          # Empty row
-            [""],                                        # Missing user_id
-            ["u1", "bad_timestamp", "a", "A", "t", "T"], # Malformed timestamp
-            ["u2", "2009-05-04T23:08:57Z", "", "", "", ""] # Missing artist and track
+            [],
+            [""],
+            ["u1", "bad_timestamp", "a", "A", "t", "T"],
+            ["u2", "2009-05-04T23:08:57Z", "", "", "", ""]
         ]
 
         accepted_count = 0
@@ -91,7 +91,7 @@ class TestIdempotencyAndEmptyDatasets(unittest.TestCase):
         - 100% duplicate records recognized and skipped
         - Identical database row counts and zero corrupted foreign keys
         """
-        # Create temporary SQLite DB
+
         db_file = tempfile.NamedTemporaryFile("w+", delete=False, suffix=".sqlite")
         db_path = Path(db_file.name)
         db_file.close()
@@ -100,11 +100,9 @@ class TestIdempotencyAndEmptyDatasets(unittest.TestCase):
             conn = sqlite3.connect(str(db_path))
             adapt_sqlite_schema(conn)
 
-            # --- RUN 1 ---
             engine1 = DeduplicationEngine()
             engine1.prime_from_database(conn)
 
-            # Sample profile and scrobbles
             u_sanitized = {"user_id": "user_idem_1", "gender": "m", "age": 28, "country": "US", "registered": "2008-01-01"}
             u_ent = transform_profile_entity(u_sanitized, "profile.tsv", 2)
             is_new_u1, _ = engine1.process_user(u_ent)
@@ -124,7 +122,6 @@ class TestIdempotencyAndEmptyDatasets(unittest.TestCase):
             ok_scrob1, scrob_rec1 = engine1.process_scrobble(scrob_ent, sid1)
             self.assertTrue(ok_scrob1)
 
-            # Load into DB
             counts_run1 = load_to_sqlite(
                 users=engine1.users,
                 artists=engine1.artists_by_id,
@@ -134,7 +131,6 @@ class TestIdempotencyAndEmptyDatasets(unittest.TestCase):
                 db_path=db_path
             )
 
-            # Verify Run 1 counts
             self.assertEqual(counts_run1["users"], 1)
             self.assertEqual(counts_run1["artists"], 1)
             self.assertEqual(counts_run1["songs"], 1)
@@ -142,48 +138,43 @@ class TestIdempotencyAndEmptyDatasets(unittest.TestCase):
 
             conn.close()
 
-            # --- RUN 2 (IDEMPOTENCY CHECK) ---
-            # Connect fresh to see committed writes and prime engine2
             conn2 = sqlite3.connect(str(db_path))
             try:
                 engine2 = DeduplicationEngine()
                 engine2.prime_from_database(conn2)
 
-                # Process the exact same inputs
                 is_new_u2, _ = engine2.process_user(u_ent)
-                # Re-processing profile with existing user_id skips duplicate!
+
                 self.assertFalse(is_new_u2)
                 self.assertEqual(engine2.stats.users_skipped_duplicate, 1)
 
                 aid2, _ = engine2.process_artist(art_ent)
-                # Artist should be reused, NOT created!
+
                 self.assertEqual(aid1, aid2)
                 self.assertEqual(engine2.stats.artists_reused, 1)
                 self.assertEqual(engine2.stats.artists_created, 0)
 
                 sid2, _ = engine2.process_song(s_ent, aid2)
-                # Song should be reused, NOT created!
+
                 self.assertEqual(sid1, sid2)
                 self.assertEqual(engine2.stats.songs_reused, 1)
                 self.assertEqual(engine2.stats.songs_created, 0)
 
                 ok_scrob2, _ = engine2.process_scrobble(scrob_ent, sid2)
-                # Scrobble should be skipped as duplicate!
+
                 self.assertFalse(ok_scrob2)
                 self.assertEqual(engine2.stats.scrobbles_skipped_duplicate, 1)
                 self.assertEqual(engine2.stats.scrobbles_accepted, 0)
 
-                # Re-running load to database
                 counts_run2 = load_to_sqlite(
                     users=engine2.users,
                     artists=engine2.artists_by_id,
                     songs=engine2.songs_by_id,
                     artist_name_to_id=engine2.artist_name_to_id,
-                    scrobbles=[], # 0 new scrobbles
+                    scrobbles=[],
                     db_path=db_path
                 )
 
-                # Final row counts MUST be identical!
                 self.assertEqual(counts_run2["users"], counts_run1["users"])
                 self.assertEqual(counts_run2["artists"], counts_run1["artists"])
                 self.assertEqual(counts_run2["songs"], counts_run1["songs"])

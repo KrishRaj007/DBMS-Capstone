@@ -17,7 +17,6 @@ class ValidationResult:
     warnings: List[str] = field(default_factory=list)
     sanitized_fields: Dict[str, Any] = field(default_factory=dict)
 
-# ISO-8601 Timestamp pattern (e.g. 2009-05-04T23:08:57Z)
 ISO_TIMESTAMP_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z?$")
 
 def validate_profile_record(record: RawRecord) -> ValidationResult:
@@ -34,13 +33,11 @@ def validate_profile_record(record: RawRecord) -> ValidationResult:
             rejection_reason="MALFORMED_EMPTY_ROW"
         )
 
-    # Pad missing trailing columns up to 5
     while len(fields) < 5:
         fields.append("")
 
     raw_uid, raw_gender, raw_age, raw_country, raw_registered = [f.strip() for f in fields[:5]]
 
-    # Mandatory check
     if not raw_uid:
         return ValidationResult(
             is_valid=False,
@@ -56,7 +53,6 @@ def validate_profile_record(record: RawRecord) -> ValidationResult:
         "registered": raw_registered if raw_registered else None
     }
 
-    # Gender validation (optional)
     if raw_gender:
         g = raw_gender.lower()
         if g in ALLOWED_GENDERS:
@@ -64,7 +60,6 @@ def validate_profile_record(record: RawRecord) -> ValidationResult:
         else:
             warnings.append(f"UNRECOGNIZED_GENDER: '{raw_gender}'")
 
-    # Age validation (optional, numeric range check)
     if raw_age:
         try:
             age_int = int(float(raw_age))
@@ -91,13 +86,13 @@ def validate_listening_record(record: RawRecord) -> ValidationResult:
     fields = record.raw_fields
 
     if len(fields) != 6:
-        # Check if row is truncated or corrupted
+
         if len(fields) < 6:
             return ValidationResult(
                 is_valid=False,
                 rejection_reason=f"MALFORMED_COLUMN_COUNT: expected 6, found {len(fields)}"
             )
-        # If extra columns due to unescaped tabs in title, we still preserve with warning
+
         fields = fields[:6]
 
     raw_uid = fields[0].strip()
@@ -107,35 +102,30 @@ def validate_listening_record(record: RawRecord) -> ValidationResult:
     raw_traid = fields[4].strip()
     raw_traname = fields[5].strip()
 
-    # Mandatory user_id
     if not raw_uid:
         return ValidationResult(
             is_valid=False,
             rejection_reason="MISSING_MANDATORY_USER_ID"
         )
 
-    # Mandatory timestamp
     if not raw_time:
         return ValidationResult(
             is_valid=False,
             rejection_reason="MISSING_MANDATORY_TIMESTAMP"
         )
 
-    # Timestamp format check
     if not ISO_TIMESTAMP_PATTERN.match(raw_time):
         return ValidationResult(
             is_valid=False,
             rejection_reason=f"MALFORMED_TIMESTAMP_FORMAT: '{raw_time}'"
         )
 
-    # Mandatory artist identity (must have name or MBID)
     if not raw_artname and not raw_artid:
         return ValidationResult(
             is_valid=False,
             rejection_reason="MISSING_MANDATORY_ARTIST_IDENTIFIER"
         )
 
-    # Mandatory track identity (must have title or MBID)
     if not raw_traname and not raw_traid:
         return ValidationResult(
             is_valid=False,
@@ -143,7 +133,7 @@ def validate_listening_record(record: RawRecord) -> ValidationResult:
         )
 
     warnings = []
-    # MBID UUID format checks (optional fields)
+
     valid_artid = None
     if raw_artid:
         if UUID_REGEX.match(raw_artid):

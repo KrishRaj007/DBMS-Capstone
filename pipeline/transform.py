@@ -17,18 +17,17 @@ from pipeline.clean import (
 )
 from pipeline.config import STANDARD_GENRES
 
-# Genre matching keywords for mapping artists into the 10 standard database genres
 GENRE_KEYWORDS = {
-    1: ["pop", "disco", "dance", "synth", "euro", "idol"],          # Pop
-    2: ["rock", "grunge", "punk", "guitar", "classic", "blues"],    # Rock
-    3: ["hip-hop", "rap", "trap", "beats", "rhyme", "flow"],        # Hip-Hop
-    4: ["r&b", "soul", "funk", "gospel", "motown", "groove"],       # R&B
-    5: ["electro", "dj", "techno", "house", "trance", "ambient", "dubstep"], # Electronic
-    6: ["jazz", "sax", "swing", "bebop", "brass", "fusion"],        # Jazz
-    7: ["orchestra", "symphony", "philharmonic", "sonata", "concerto", "piano", "classical"], # Classical
-    8: ["country", "acoustic", "folk", "bluegrass", "americana"],   # Country
-    9: ["indie", "alternative", "dream", "shoegaze", "lo-fi"],      # Indie
-    10: ["metal", "heavy", "thrash", "death", "doom", "black"]       # Metal
+    1: ["pop", "disco", "dance", "synth", "euro", "idol"],
+    2: ["rock", "grunge", "punk", "guitar", "classic", "blues"],
+    3: ["hip-hop", "rap", "trap", "beats", "rhyme", "flow"],
+    4: ["r&b", "soul", "funk", "gospel", "motown", "groove"],
+    5: ["electro", "dj", "techno", "house", "trance", "ambient", "dubstep"],
+    6: ["jazz", "sax", "swing", "bebop", "brass", "fusion"],
+    7: ["orchestra", "symphony", "philharmonic", "sonata", "concerto", "piano", "classical"],
+    8: ["country", "acoustic", "folk", "bluegrass", "americana"],
+    9: ["indie", "alternative", "dream", "shoegaze", "lo-fi"],
+    10: ["metal", "heavy", "thrash", "death", "doom", "black"]
 }
 
 def infer_genre_id(artist_name: str, track_name: Optional[str] = None) -> int:
@@ -41,7 +40,6 @@ def infer_genre_id(artist_name: str, track_name: Optional[str] = None) -> int:
         if any(kw in text for kw in kws):
             return gid
 
-    # Deterministic fallback between genres 1-10 using hash
     h = int(hashlib.md5(artist_name.encode("utf-8")).hexdigest(), 16)
     return (h % len(STANDARD_GENRES)) + 1
 
@@ -148,7 +146,6 @@ def transform_scrobble_entity(
     uid = sanitized["user_id"]
     ts_clean = clean_timestamp_string(sanitized["timestamp"]) or sanitized["timestamp"]
 
-    # Artist credits
     credit = parse_artist_credit(sanitized.get("artist_name"))
     art_mbid = sanitized.get("artist_mbid")
     tra_mbid = sanitized.get("track_mbid")
@@ -163,7 +160,6 @@ def transform_scrobble_entity(
         "scrobble_utc": ts_clean
     }
 
-    # Deterministic source IDs to avoid collisions across multiple data imports
     artist_source_id = art_mbid if art_mbid else hashlib.md5(credit.primary_artist.lower().encode("utf-8")).hexdigest()
     song_source_id = tra_mbid if tra_mbid else hashlib.md5(f"{credit.primary_artist}::{tra_title}".lower().encode("utf-8")).hexdigest()
     scrobble_source_id = hashlib.md5(f"{uid}::{ts_clean}::{song_source_id}".encode("utf-8")).hexdigest()
@@ -184,9 +180,9 @@ def transform_scrobble_entity(
         artist_name=credit.primary_artist,
         artist_mbid=art_mbid,
         track_mbid=tra_mbid,
-        album=None,                 # No album in Last.fm raw TSV; do not invent values
-        duration_seconds=0,         # No duration in raw scrobbles
-        release_date=None,          # No release date in raw TSV
+        album=None,
+        duration_seconds=0,
+        release_date=None,
         genre_id=genre_id,
         source_namespace="lastfm",
         source_id=song_source_id,

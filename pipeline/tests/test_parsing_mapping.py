@@ -37,7 +37,7 @@ from pipeline.extract import (
 class TestDatasetParsingAndMapping(unittest.TestCase):
 
     def test_text_normalization(self):
-        # Unicode normalization (NFKC) & whitespace collapsing
+
         self.assertEqual(normalize_text("  Radiohead  "), "Radiohead")
         self.assertEqual(normalize_text("Daft\t\tPunk\n"), "Daft Punk")
         self.assertEqual(normalize_text("&amp;"), "&")
@@ -48,7 +48,7 @@ class TestDatasetParsingAndMapping(unittest.TestCase):
         self.assertIsNone(normalize_text("N/A"))
 
     def test_date_and_timestamp_parsing(self):
-        # Multiple date formats to ISO YYYY-MM-DD
+
         self.assertEqual(clean_date_string("Aug 13, 2006"), "2006-08-13")
         self.assertEqual(clean_date_string("August 13, 2006"), "2006-08-13")
         self.assertEqual(clean_date_string("13 Aug 2006"), "2006-08-13")
@@ -57,13 +57,12 @@ class TestDatasetParsingAndMapping(unittest.TestCase):
         self.assertIsNone(clean_date_string("invalid-date"))
         self.assertIsNone(clean_date_string(None))
 
-        # ISO 8601 UTC timestamp to SQL standard format
         self.assertEqual(clean_timestamp_string("2009-05-04T23:08:57Z"), "2009-05-04 23:08:57")
         self.assertEqual(clean_timestamp_string("2009-05-04T23:08:57"), "2009-05-04 23:08:57")
         self.assertIsNone(clean_timestamp_string("not-a-timestamp"))
 
     def test_multi_artist_collaboration_parsing(self):
-        # Delimiters: feat, ft, featuring, vs, with, &
+
         credit1 = parse_artist_credit("Dark Globe Feat. Boy George")
         self.assertEqual(credit1.primary_artist, "Dark Globe")
         self.assertEqual(credit1.collaborators, ["Boy George"])
@@ -89,17 +88,16 @@ class TestDatasetParsingAndMapping(unittest.TestCase):
         self.assertEqual(clean_track_title(None), "Untitled Track")
 
     def test_genre_inference(self):
-        # Keyword matching
+
         pop_id = infer_genre_id("Pop Star", "Dance Beat")
-        self.assertEqual(pop_id, 1)  # Pop
+        self.assertEqual(pop_id, 1)
 
         rock_id = infer_genre_id("Rock Band", "Guitar Solo")
-        self.assertEqual(rock_id, 2)  # Rock
+        self.assertEqual(rock_id, 2)
 
         metal_id = infer_genre_id("Iron Heavy", "Thrash Death")
-        self.assertEqual(metal_id, 10) # Metal
+        self.assertEqual(metal_id, 10)
 
-        # Deterministic fallback when no keywords match
         fallback_id1 = infer_genre_id("Unknown Artist A")
         fallback_id2 = infer_genre_id("Unknown Artist A")
         self.assertTrue(1 <= fallback_id1 <= 10)
@@ -145,7 +143,7 @@ class TestDatasetParsingAndMapping(unittest.TestCase):
         self.assertIsInstance(song, SongEntity)
         self.assertEqual(song.title, "Karma Police")
         self.assertEqual(song.track_mbid, "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d")
-        self.assertIsNone(song.album)  # Not fabricated
+        self.assertIsNone(song.album)
         self.assertEqual(song.source_namespace, "lastfm")
 
         self.assertIsInstance(scrobble, ScrobbleEntity)

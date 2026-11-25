@@ -60,7 +60,6 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
     """
     report = VerificationReport()
 
-    # 1. Count Intermediate Records
     inter_counts = {
         "users": count_jsonl_lines(USERS_CLEANED_FILE),
         "artists": count_jsonl_lines(ARTISTS_CLEANED_FILE),
@@ -83,7 +82,7 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
     cursor = conn.cursor()
 
     try:
-        # Table counts
+
         tables = ["genres", "users", "artists", "songs", "listening_history"]
         tbl_counts = {}
         for t in tables:
@@ -91,7 +90,6 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             tbl_counts[t] = cursor.fetchone()[0]
         report.table_counts = tbl_counts
 
-        # Check 1: Non-empty database
         passed = all(cnt > 0 for cnt in tbl_counts.values())
         report.checks.append(AuditCheck(
             name="TABLES_POPULATED",
@@ -99,7 +97,6 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             details=f"Populated counts: {tbl_counts}"
         ))
 
-        # Check 2: Referential Integrity - Songs -> Artists
         cursor.execute("""
             SELECT COUNT(*) FROM songs s
             LEFT JOIN artists a ON s.artist_id = a.id
@@ -112,7 +109,6 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             details=f"Orphaned songs referencing missing artists: {orphan_songs}"
         ))
 
-        # Check 3: Referential Integrity - Songs -> Genres
         cursor.execute("""
             SELECT COUNT(*) FROM songs s
             LEFT JOIN genres g ON s.genre_id = g.id
@@ -125,7 +121,6 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             details=f"Orphaned songs referencing missing genres: {orphan_song_genres}"
         ))
 
-        # Check 4: Referential Integrity - Listening History -> Users & Songs
         cursor.execute("""
             SELECT COUNT(*) FROM listening_history lh
             LEFT JOIN users u ON lh.user_id = u.id
@@ -146,7 +141,6 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             details=f"Orphaned listens: missing users={orphan_lh_users}, missing songs={orphan_lh_songs}"
         ))
 
-        # Check 5: Uniqueness - User Emails & Usernames
         cursor.execute("SELECT COUNT(*), COUNT(DISTINCT username), COUNT(DISTINCT email) FROM users")
         u_tot, u_dist_name, u_dist_email = cursor.fetchone()
         dup_users = (u_tot - u_dist_name) + (u_tot - u_dist_email)
@@ -156,7 +150,6 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             details=f"Users total: {u_tot}, unique names: {u_dist_name}, unique emails: {u_dist_email}"
         ))
 
-        # Check 6: Uniqueness - Artist MBIDs (when present)
         cursor.execute("""
             SELECT COUNT(mbid) - COUNT(DISTINCT mbid)
             FROM artists
@@ -169,7 +162,6 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             details=f"Duplicate artist MBIDs: {dup_mbids}"
         ))
 
-        # Check 7: No Invented Placeholders Audit
         cursor.execute("SELECT COUNT(*) FROM songs WHERE title IN ('Unknown', 'Placeholder', 'undefined')")
         hallucinated_songs = cursor.fetchone()[0]
         cursor.execute("SELECT COUNT(*) FROM artists WHERE name IN ('Unknown', 'Placeholder', 'undefined')")
@@ -180,7 +172,6 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             details=f"Hallucinated song titles: {hallucinated_songs}, placeholder artists: {hallucinated_artists}"
         ))
 
-        # Check 8: Analytic Views Execution
         cursor.execute("SELECT COUNT(*) FROM top_songs_view")
         top_songs_count = cursor.fetchone()[0]
         cursor.execute("SELECT COUNT(*) FROM genre_popularity_view")
@@ -191,7 +182,6 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             details=f"Top songs view returned {top_songs_count} rows, Genre view returned {genre_pop_count} rows"
         ))
 
-        # Check 9: Source Namespaces and Identifiers Audit
         cursor.execute("SELECT COUNT(*) FROM users WHERE source_namespace IS NULL OR source_namespace = ''")
         null_u_ns = cursor.fetchone()[0]
         cursor.execute("SELECT COUNT(*) FROM artists WHERE source_namespace IS NULL OR source_namespace = ''")
@@ -205,7 +195,6 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             details=f"Missing source namespaces: users={null_u_ns}, artists={null_a_ns}, songs={null_s_ns}"
         ))
 
-        # Check 10: Appropriate Indexes Provisioned Audit
         cursor.execute("SELECT name FROM sqlite_master WHERE type='index'")
         idx_names = {r[0] for r in cursor.fetchall()}
         required_indexes = ["idx_users_source", "idx_artists_source", "idx_songs_source", "idx_lh_source", "idx_songs_artist"]
@@ -216,7 +205,6 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             details=f"Active indexes: {len(idx_names)}, missing required: {missing_indexes}"
         ))
 
-        # Check 11: Staging Tables Available Audit
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'staging_%'")
         staging_tbls = [r[0] for r in cursor.fetchall()]
         report.checks.append(AuditCheck(
@@ -225,7 +213,6 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
             details=f"Active staging tables: {staging_tbls}"
         ))
 
-        # Check 12: Aggregated Counts Storage Ready Audit
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='aggregated_listening_counts'")
         has_alc = cursor.fetchone() is not None
         report.checks.append(AuditCheck(
@@ -237,14 +224,12 @@ def run_verification(db_path: Path = SQLITE_DB_PATH) -> VerificationReport:
     finally:
         conn.close()
 
-    # Compile scores
     report.total_checks = len(report.checks)
     report.passed_checks = sum(1 for c in report.checks if c.passed)
     report.failed_checks = report.total_checks - report.passed_checks
     report.quality_score = round((report.passed_checks / report.total_checks) * 100, 1) if report.total_checks else 0.0
 
     return report
-
 
 def run_mysql_verification() -> VerificationReport:
     """
@@ -282,7 +267,7 @@ def run_mysql_verification() -> VerificationReport:
 
     try:
         with conn.cursor() as cursor:
-            # Table counts
+
             tables = ["genres", "users", "artists", "songs", "listening_history"]
             tbl_counts = {}
             for t in tables:
@@ -290,7 +275,6 @@ def run_mysql_verification() -> VerificationReport:
                 tbl_counts[t] = cursor.fetchone()[0]
             report.table_counts = tbl_counts
 
-            # Check 1: Non-empty database
             passed = all(cnt > 0 for cnt in tbl_counts.values())
             report.checks.append(AuditCheck(
                 name="MYSQL_TABLES_POPULATED",
@@ -298,7 +282,6 @@ def run_mysql_verification() -> VerificationReport:
                 details=f"Populated counts: {tbl_counts}"
             ))
 
-            # Check 2: Referential Integrity - Songs -> Artists
             cursor.execute("""
                 SELECT COUNT(*) FROM songs s
                 LEFT JOIN artists a ON s.artist_id = a.id
@@ -311,7 +294,6 @@ def run_mysql_verification() -> VerificationReport:
                 details=f"Orphaned songs referencing missing artists: {orphan_songs}"
             ))
 
-            # Check 3: Referential Integrity - Songs -> Genres
             cursor.execute("""
                 SELECT COUNT(*) FROM songs s
                 LEFT JOIN genres g ON s.genre_id = g.id
@@ -324,7 +306,6 @@ def run_mysql_verification() -> VerificationReport:
                 details=f"Orphaned songs referencing missing genres: {orphan_song_genres}"
             ))
 
-            # Check 4: Referential Integrity - Listening History -> Users & Songs
             cursor.execute("""
                 SELECT COUNT(*) FROM listening_history lh
                 LEFT JOIN users u ON lh.user_id = u.id
@@ -345,7 +326,6 @@ def run_mysql_verification() -> VerificationReport:
                 details=f"Orphaned listens: missing users={orphan_lh_users}, missing songs={orphan_lh_songs}"
             ))
 
-            # Check 5: Uniqueness - User Emails & Usernames
             cursor.execute("SELECT COUNT(*), COUNT(DISTINCT username), COUNT(DISTINCT email) FROM users")
             u_tot, u_dist_name, u_dist_email = cursor.fetchone()
             dup_users = (u_tot - u_dist_name) + (u_tot - u_dist_email)
@@ -355,7 +335,6 @@ def run_mysql_verification() -> VerificationReport:
                 details=f"Users total: {u_tot}, unique names: {u_dist_name}, unique emails: {u_dist_email}"
             ))
 
-            # Check 6: Uniqueness - Artist MBIDs
             cursor.execute("""
                 SELECT COUNT(mbid) - COUNT(DISTINCT mbid)
                 FROM artists
@@ -368,7 +347,6 @@ def run_mysql_verification() -> VerificationReport:
                 details=f"Duplicate artist MBIDs: {dup_mbids}"
             ))
 
-            # Check 7: No Invented Placeholders Audit
             cursor.execute("SELECT COUNT(*) FROM songs WHERE title IN ('Unknown', 'Placeholder', 'undefined')")
             hallucinated_songs = cursor.fetchone()[0]
             cursor.execute("SELECT COUNT(*) FROM artists WHERE name IN ('Unknown', 'Placeholder', 'undefined')")
@@ -379,7 +357,6 @@ def run_mysql_verification() -> VerificationReport:
                 details=f"Hallucinated songs: {hallucinated_songs}, placeholder artists: {hallucinated_artists}"
             ))
 
-            # Check 8: Analytic Views Execution
             cursor.execute("SELECT COUNT(*) FROM top_songs_view")
             top_songs_count = cursor.fetchone()[0]
             cursor.execute("SELECT COUNT(*) FROM genre_popularity_view")
@@ -390,7 +367,6 @@ def run_mysql_verification() -> VerificationReport:
                 details=f"Top songs view: {top_songs_count} rows, Genre view: {genre_pop_count} rows"
             ))
 
-            # Check 9: Source Namespaces Preserved
             cursor.execute("SELECT COUNT(*) FROM users WHERE source_namespace IS NULL OR source_namespace = ''")
             null_u_ns = cursor.fetchone()[0]
             cursor.execute("SELECT COUNT(*) FROM artists WHERE source_namespace IS NULL OR source_namespace = ''")
@@ -403,7 +379,6 @@ def run_mysql_verification() -> VerificationReport:
                 details=f"Missing namespaces: users={null_u_ns}, artists={null_a_ns}, songs={null_s_ns}"
             ))
 
-            # Check 10: Aggregated Counts Storage Ready
             cursor.execute("""
                 SELECT COUNT(*) FROM information_schema.tables
                 WHERE table_schema = DATABASE() AND table_name = 'aggregated_listening_counts'
@@ -418,7 +393,6 @@ def run_mysql_verification() -> VerificationReport:
     finally:
         conn.close()
 
-    # Compile scores
     report.total_checks = len(report.checks)
     report.passed_checks = sum(1 for c in report.checks if c.passed)
     report.failed_checks = report.total_checks - report.passed_checks

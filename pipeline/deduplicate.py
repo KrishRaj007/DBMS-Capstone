@@ -37,27 +37,22 @@ class DeduplicationEngine:
     def __init__(self):
         self.stats = DeduplicationStats()
 
-        # Users registry: user_id -> UserEntity
         self.users: Dict[str, UserEntity] = {}
 
-        # Artists registry
         self.artists_by_id: Dict[int, ArtistEntity] = {}
         self.artist_mbid_to_id: Dict[str, int] = {}
         self.artist_name_to_id: Dict[str, int] = {}
         self.artist_source_to_id: Dict[Tuple[str, str], int] = {}
         self._next_artist_id: int = 1
 
-        # Songs registry
         self.songs_by_id: Dict[int, SongEntity] = {}
         self.song_mbid_to_id: Dict[Tuple[int, str], int] = {}
         self.song_title_to_id: Dict[Tuple[int, str], int] = {}
         self.song_source_to_id: Dict[Tuple[str, str], int] = {}
         self._next_song_id: int = 1
 
-        # Scrobbles deduplication key set: (user_id, timestamp, song_id)
         self.seen_scrobbles: Set[Tuple[str, str, int]] = set()
 
-        # Aggregated plays registry: (source_namespace, user_id, artist_id, song_id) -> play_count
         self.aggregated_plays: Dict[Tuple[str, Optional[str], int, Optional[int]], int] = {}
 
     def prime_from_database(self, conn: sqlite3.Connection):
@@ -67,7 +62,6 @@ class DeduplicationEngine:
         """
         cursor = conn.cursor()
 
-        # 1. Prime existing artists
         try:
             cursor.execute("SELECT id, name, mbid, source_namespace, source_id FROM artists")
             for aid, name, mbid, src_ns, src_id in cursor.fetchall():
@@ -83,7 +77,6 @@ class DeduplicationEngine:
         except Exception:
             pass
 
-        # 2. Prime existing songs
         try:
             cursor.execute("SELECT id, title, artist_id, track_mbid, source_namespace, source_id FROM songs")
             for sid, title, art_id, tra_mbid, src_ns, src_id in cursor.fetchall():
@@ -100,7 +93,6 @@ class DeduplicationEngine:
         except Exception:
             pass
 
-        # 3. Prime existing scrobbles to prevent duplication on re-run
         try:
             cursor.execute("""
                 SELECT u.username, lh.listened_at, lh.song_id
@@ -112,7 +104,6 @@ class DeduplicationEngine:
         except Exception:
             pass
 
-        # 4. Prime existing users to prevent duplicate user profiles across re-runs
         try:
             cursor.execute("SELECT id, username, email, gender, age, country, created_at, source_namespace, source_id FROM users")
             for uid_pk, uname, email, gender, age, country, reg_at, src_ns, src_id in cursor.fetchall():
@@ -142,7 +133,7 @@ class DeduplicationEngine:
         into the deduplication registries to preserve IDs and avoid duplicates.
         """
         with conn.cursor() as cursor:
-            # 1. Prime artists
+
             try:
                 cursor.execute("SELECT id, name, mbid, source_namespace, source_id FROM artists")
                 for aid, name, mbid, src_ns, src_id in cursor.fetchall():
@@ -158,7 +149,6 @@ class DeduplicationEngine:
             except Exception as e:
                 print(f"Warning priming artists from MySQL: {e}")
 
-            # 2. Prime songs
             try:
                 cursor.execute("SELECT id, title, artist_id, track_mbid, source_namespace, source_id FROM songs")
                 for sid, title, art_id, tra_mbid, src_ns, src_id in cursor.fetchall():
@@ -175,7 +165,6 @@ class DeduplicationEngine:
             except Exception as e:
                 print(f"Warning priming songs from MySQL: {e}")
 
-            # 3. Prime scrobbles
             try:
                 cursor.execute("""
                     SELECT u.username, lh.listened_at, lh.song_id
@@ -187,7 +176,6 @@ class DeduplicationEngine:
             except Exception as e:
                 print(f"Warning priming scrobbles from MySQL: {e}")
 
-            # 4. Prime users
             try:
                 cursor.execute("SELECT id, username, email, gender, age, country, created_at, source_namespace, source_id FROM users")
                 for uid_pk, uname, email, gender, age, country, reg_at, src_ns, src_id in cursor.fetchall():
@@ -246,7 +234,7 @@ class DeduplicationEngine:
             art_id = self.artist_name_to_id.get(norm_name)
 
         if art_id is not None:
-            # Existing artist found
+
             existing = self.artists_by_id.get(art_id)
             if existing:
                 if not existing.mbid and artist.mbid:
@@ -262,12 +250,11 @@ class DeduplicationEngine:
                 self.stats.artists_reused += 1
                 return art_id, existing
             else:
-                # Primed from DB without full Entity in memory yet
+
                 self.artists_by_id[art_id] = artist
                 self.stats.artists_reused += 1
                 return art_id, artist
 
-        # New Artist
         art_id = self._next_artist_id
         self._next_artist_id += 1
 
@@ -304,7 +291,7 @@ class DeduplicationEngine:
             song_id = self.song_title_to_id.get((artist_id, norm_title))
 
         if song_id is not None:
-            # Existing song found
+
             existing = self.songs_by_id.get(song_id)
             if existing:
                 if not existing.track_mbid and song.track_mbid:
@@ -321,7 +308,6 @@ class DeduplicationEngine:
                 self.stats.songs_reused += 1
                 return song_id, song
 
-        # New Song
         song_id = self._next_song_id
         self._next_song_id += 1
 

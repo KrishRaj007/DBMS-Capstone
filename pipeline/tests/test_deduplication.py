@@ -29,19 +29,17 @@ class TestDeduplication(unittest.TestCase):
         self.assertTrue(is_new1)
         self.assertEqual(res1.age, 25)
 
-        # Duplicate submission of user_001
         is_new2, res2 = self.engine.process_user(u2)
         self.assertFalse(is_new2)
-        self.assertEqual(res2.age, 25) # Preserved first valid record
+        self.assertEqual(res2.age, 25)
         self.assertEqual(self.engine.stats.users_skipped_duplicate, 1)
 
-        # Different user
         is_new3, res3 = self.engine.process_user(u3)
         self.assertTrue(is_new3)
         self.assertEqual(self.engine.stats.users_accepted, 2)
 
     def test_artist_deduplication_and_mbid_enrichment(self):
-        # First: Artist without MBID
+
         a1 = ArtistEntity(
             name="Radiohead",
             mbid=None,
@@ -56,7 +54,6 @@ class TestDeduplication(unittest.TestCase):
         self.assertEqual(self.engine.stats.artists_created, 1)
         self.assertIsNone(res1.mbid)
 
-        # Second: Same artist with MBID -> enriches existing artist
         mbid_rh = "f82bcf78-5b69-4622-a5ef-73800768d9ac"
         a2 = ArtistEntity(
             name="Radiohead",
@@ -74,7 +71,6 @@ class TestDeduplication(unittest.TestCase):
         self.assertEqual(self.engine.stats.artists_updated_mbid, 1)
         self.assertEqual(self.engine.stats.artists_reused, 1)
 
-        # Third: Look up artist directly by MBID
         a3 = ArtistEntity(
             name="Radiohead Alternative Spelling",
             mbid=mbid_rh,
@@ -87,10 +83,10 @@ class TestDeduplication(unittest.TestCase):
         )
         id3, _ = self.engine.process_artist(a3)
         self.assertEqual(id1, id3)
-        self.assertEqual(self.engine.stats.artists_created, 1) # Still only 1 created!
+        self.assertEqual(self.engine.stats.artists_created, 1)
 
     def test_song_deduplication_scoped_to_artist(self):
-        # Create Artist
+
         a = ArtistEntity("Nirvana", None, "Nirvana", [], 2, {})
         art_id, _ = self.engine.process_artist(a)
 
@@ -108,12 +104,11 @@ class TestDeduplication(unittest.TestCase):
         sid1, _ = self.engine.process_song(s1, art_id)
         self.assertEqual(self.engine.stats.songs_created, 1)
 
-        # Re-processing same song under same artist reuses existing song_id
         s2 = SongEntity(
-            title="smells like teen spirit",  # case-insensitive match
+            title="smells like teen spirit",
             artist_name="Nirvana",
             artist_mbid=None,
-            track_mbid="56b464a4-4444-42b7-a859-99a380908b1a", # enriched with MBID
+            track_mbid="56b464a4-4444-42b7-a859-99a380908b1a",
             album=None,
             duration_seconds=301,
             release_date=None,
@@ -139,12 +134,10 @@ class TestDeduplication(unittest.TestCase):
         )
         song_id = 101
 
-        # First time: Accepted
         ok1, rec1 = self.engine.process_scrobble(scrobble, song_id)
         self.assertTrue(ok1)
         self.assertEqual(self.engine.stats.scrobbles_accepted, 1)
 
-        # Duplicate: Exact same user, timestamp, and song_id -> Skipped
         ok2, rec2 = self.engine.process_scrobble(scrobble, song_id)
         self.assertFalse(ok2)
         self.assertEqual(self.engine.stats.scrobbles_skipped_duplicate, 1)
@@ -161,7 +154,6 @@ class TestDeduplication(unittest.TestCase):
         self.assertTrue(ok1)
         self.assertEqual(self.engine.stats.aggregated_plays_accepted, 1)
 
-        # Duplicate key accumulates count
         play2 = AggregatedPlayEntity(
             artist_name="Radiohead",
             play_count=30,
@@ -171,7 +163,7 @@ class TestDeduplication(unittest.TestCase):
         ok2, _ = self.engine.process_aggregated_play(play2, artist_id=1, song_id=None)
         self.assertFalse(ok2)
         self.assertEqual(self.engine.stats.aggregated_plays_skipped_duplicate, 1)
-        # Check accumulated sum in registry
+
         key = ("dataset", "user_000001", 1, None)
         self.assertEqual(self.engine.aggregated_plays[key], 80)
 

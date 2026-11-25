@@ -26,7 +26,7 @@ def extract_profiles(filepath: Path) -> Generator[RawRecord, None, None]:
 
     filename = filepath.name
     with open(filepath, "r", encoding="utf-8", errors="replace") as f:
-        # First line is header
+
         header_line = f.readline()
         line_num = 1
         for line in f:

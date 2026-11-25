@@ -36,10 +36,6 @@ def ensure_cleaned_dir():
     if SQLITE_DB_PATH.parent:
         SQLITE_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-# ────────────────────────────────────────────────────────────
-# 1. CLEANED INTERMEDIATE DATA WRITERS
-# ────────────────────────────────────────────────────────────
-
 def write_intermediate_genres():
     ensure_cleaned_dir()
     with open(GENRES_CLEANED_FILE, "w", encoding="utf-8") as f:
@@ -120,10 +116,6 @@ def write_pipeline_metrics(metrics: Dict[str, Any]):
     with open(METRICS_FILE, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=2, ensure_ascii=False)
 
-# ────────────────────────────────────────────────────────────
-# 2. SQLITE SCHEMA ADAPTATION & TARGET LOADER
-# ────────────────────────────────────────────────────────────
-
 def adapt_sqlite_schema(conn: sqlite3.Connection):
     """
     Non-destructively adapts SQLite schema:
@@ -136,14 +128,12 @@ def adapt_sqlite_schema(conn: sqlite3.Connection):
     cursor = conn.cursor()
     cursor.execute("PRAGMA foreign_keys = ON;")
 
-    # Helper to check if a column exists
     def get_columns(table_name: str) -> List[str]:
         try:
             return [row[1] for row in cursor.execute(f"PRAGMA table_info({table_name})").fetchall()]
         except Exception:
             return []
 
-    # 1. Base tables creation if not exist
     cursor.executescript("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -211,7 +201,6 @@ def adapt_sqlite_schema(conn: sqlite3.Connection):
     );
     """)
 
-    # 2. Add columns if table already existed without them
     user_cols = get_columns("users")
     if "source_namespace" not in user_cols:
         cursor.execute("ALTER TABLE users ADD COLUMN source_namespace TEXT NOT NULL DEFAULT 'local'")
@@ -250,7 +239,6 @@ def adapt_sqlite_schema(conn: sqlite3.Connection):
     if "source_id" not in lh_cols:
         cursor.execute("ALTER TABLE listening_history ADD COLUMN source_id TEXT")
 
-    # 3. Create Aggregated Listening Counts table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS aggregated_listening_counts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -268,7 +256,6 @@ def adapt_sqlite_schema(conn: sqlite3.Connection):
     );
     """)
 
-    # 4. Create Staging Tables for Safe Bulk ETL
     cursor.executescript("""
     CREATE TABLE IF NOT EXISTS staging_users (
         source_id TEXT NOT NULL,
@@ -325,7 +312,6 @@ def adapt_sqlite_schema(conn: sqlite3.Connection):
     );
     """)
 
-    # 5. Indexes for search, joins, filtering, and analytics
     cursor.executescript("""
     CREATE INDEX IF NOT EXISTS idx_users_source ON users (source_namespace, source_id);
     CREATE INDEX IF NOT EXISTS idx_artists_name ON artists (name);
@@ -352,7 +338,6 @@ def adapt_sqlite_schema(conn: sqlite3.Connection):
     CREATE INDEX IF NOT EXISTS idx_alc_song ON aggregated_listening_counts (song_id);
     """)
 
-    # 6. Adapt Analytic Views to combine individual listens and aggregated counts
     cursor.executescript("""
     DROP VIEW IF EXISTS top_songs_view;
     CREATE VIEW top_songs_view AS
@@ -463,19 +448,13 @@ def load_to_sqlite(
     }
 
     try:
-        # ────────────────────────────────────────────────────────
-        # STEP 1: CLEAR STAGING TABLES
-        # ────────────────────────────────────────────────────────
+
         cursor.execute("DELETE FROM staging_users;")
         cursor.execute("DELETE FROM staging_artists;")
         cursor.execute("DELETE FROM staging_songs;")
         cursor.execute("DELETE FROM staging_listening_history;")
         cursor.execute("DELETE FROM staging_aggregated_counts;")
 
-        # ────────────────────────────────────────────────────────
-        # STEP 2: LOAD INCOMING DATA INTO STAGING TABLES
-        # ────────────────────────────────────────────────────────
-        # Staging Users
         staging_user_rows = []
         for u in users.values():
             reg_date = u.registered_at or "2006-01-01 00:00:00"
@@ -496,7 +475,6 @@ def load_to_sqlite(
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, staging_user_rows)
 
-        # Staging Artists
         staging_artist_rows = []
         for aid, a in artists.items():
             staging_artist_rows.append((
@@ -513,7 +491,6 @@ def load_to_sqlite(
             VALUES (?, ?, ?, ?, ?, ?)
         """, staging_artist_rows)
 
-        # Staging Songs
         staging_song_rows = []
         for sid, s in songs.items():
             art_src_id = str(artist_name_to_id.get(s.artist_name.lower(), 1))
@@ -534,7 +511,6 @@ def load_to_sqlite(
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, staging_song_rows)
 
-        # Staging Scrobbles
         staging_scrobble_rows = []
         for sc in scrobbles:
             staging_scrobble_rows.append((
@@ -550,7 +526,6 @@ def load_to_sqlite(
             VALUES (?, ?, ?, ?, ?)
         """, staging_scrobble_rows)
 
-        # Staging Aggregated Counts (if provided)
         if aggregated_plays:
             staging_agg_rows = []
             for ap in aggregated_plays:
@@ -567,9 +542,6 @@ def load_to_sqlite(
                 VALUES (?, ?, ?, ?, ?)
             """, staging_agg_rows)
 
-        # ────────────────────────────────────────────────────────
-        # STEP 3: PRE-MERGE VALIDATION OF STAGING DATA
-        # ────────────────────────────────────────────────────────
         cursor.execute("SELECT COUNT(*) FROM staging_users WHERE username IS NULL OR email IS NULL")
         invalid_users = cursor.fetchone()[0]
         if invalid_users > 0:
@@ -580,18 +552,12 @@ def load_to_sqlite(
         if invalid_songs > 0:
             raise ValueError(f"Staging validation error: {invalid_songs} invalid staging songs detected.")
 
-        # ────────────────────────────────────────────────────────
-        # STEP 4: ATOMIC TRANSACTIONAL MERGE WITH PRESERVATION
-        # ────────────────────────────────────────────────────────
         cursor.execute("BEGIN TRANSACTION;")
 
-        # A. Genres
         genre_rows = [(g["id"], g["name"], g["description"]) for g in STANDARD_GENRES]
         cursor.executemany("INSERT OR IGNORE INTO genres (id, name, description) VALUES (?, ?, ?)", genre_rows)
         counts["genres"] = len(genre_rows)
 
-        # B. Users: Preserving existing accounts, IDs, and passwords
-        # Query existing users for mapping
         user_id_map: Dict[str, int] = {}
         cursor.execute("SELECT id, username, email, source_id, source_namespace FROM users")
         for db_id, uname, email, s_id, s_ns in cursor.fetchall():
@@ -608,7 +574,7 @@ def load_to_sqlite(
         for s_id, s_ns, uname, email, pw, gender, age, country, reg in cursor.fetchall():
             existing_id = user_id_map.get((s_ns, s_id)) or user_id_map.get(uname.lower()) or user_id_map.get(email.lower())
             if existing_id:
-                # Update demographic metadata without touching user's password or primary key!
+
                 cursor.execute("""
                     UPDATE users
                     SET gender = COALESCE(gender, ?),
@@ -628,7 +594,6 @@ def load_to_sqlite(
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, new_users_to_insert)
 
-        # Rebuild complete user ID map
         cursor.execute("SELECT id, username, source_id, source_namespace FROM users")
         for db_id, uname, s_id, s_ns in cursor.fetchall():
             if s_id and s_ns:
@@ -637,7 +602,6 @@ def load_to_sqlite(
         cursor.execute("SELECT COUNT(*) FROM users")
         counts["users"] = cursor.fetchone()[0]
 
-        # C. Artists: Match by source_id, MBID, or name; preserve existing primary keys!
         artist_id_map: Dict[str, int] = {}
         cursor.execute("SELECT id, name, mbid, source_id, source_namespace FROM artists")
         for db_id, name, mbid, s_id, s_ns in cursor.fetchall():
@@ -658,7 +622,7 @@ def load_to_sqlite(
             )
 
             if existing_id:
-                # Enrich existing record without altering primary key
+
                 cursor.execute("""
                     UPDATE artists
                     SET mbid = COALESCE(mbid, ?),
@@ -682,7 +646,6 @@ def load_to_sqlite(
         cursor.execute("SELECT COUNT(*) FROM artists")
         counts["artists"] = cursor.fetchone()[0]
 
-        # D. Songs: Match by track_mbid or (artist_id, title); preserve existing primary keys!
         song_id_map: Dict[Tuple[int, str], int] = {}
         song_mbid_map: Dict[Tuple[int, str], int] = {}
         cursor.execute("SELECT id, title, artist_id, track_mbid, source_id, source_namespace FROM songs")
@@ -691,7 +654,6 @@ def load_to_sqlite(
             if tra_mbid:
                 song_mbid_map[(art_id, tra_mbid.lower())] = db_id
 
-        # Re-fetch fresh artist mappings by name
         cursor.execute("SELECT id, name FROM artists")
         art_by_name = {r[1].lower(): r[0] for r in cursor.fetchall()}
 
@@ -735,8 +697,6 @@ def load_to_sqlite(
         cursor.execute("SELECT COUNT(*) FROM songs")
         counts["songs"] = cursor.fetchone()[0]
 
-        # E. Scrobbles: Repeatable upsert without duplicates
-        # Map scrobble songs to database song IDs
         cursor.execute("SELECT id, title, artist_id FROM songs")
         all_songs_lookup = {(r[2], r[1].lower()): r[0] for r in cursor.fetchall()}
 
@@ -756,7 +716,6 @@ def load_to_sqlite(
                     sc.get("source_id")
                 ))
 
-        # Check existing scrobbles for duplicate avoidance
         cursor.execute("SELECT user_id, song_id, listened_at FROM listening_history")
         existing_lh_set = set(cursor.fetchall())
 
@@ -775,7 +734,6 @@ def load_to_sqlite(
         cursor.execute("SELECT COUNT(*) FROM listening_history")
         counts["listening_history"] = cursor.fetchone()[0]
 
-        # F. Aggregated Listening Counts
         if aggregated_plays:
             agg_rows = []
             for ap in aggregated_plays:
@@ -804,11 +762,10 @@ def load_to_sqlite(
         cursor.execute("SELECT COUNT(*) FROM aggregated_listening_counts")
         counts["aggregated_counts"] = cursor.fetchone()[0]
 
-        # Commit Transaction
         cursor.execute("COMMIT;")
 
     except Exception as e:
-        # Atomic Rollback Strategy: ensure database remains uncorrupted
+
         try:
             cursor.execute("ROLLBACK;")
         except Exception:
@@ -819,10 +776,6 @@ def load_to_sqlite(
         conn.close()
 
     return counts
-
-# ────────────────────────────────────────────────────────────
-# 3. MYSQL TARGET LOADER (Mandatory Primary Data Store)
-# ────────────────────────────────────────────────────────────
 
 def load_to_mysql(
     users: Dict[str, UserEntity],
@@ -883,9 +836,7 @@ def load_to_mysql(
 
     try:
         with conn.cursor() as cursor:
-            # ────────────────────────────────────────────────────────
-            # 1. GENRES (Idempotent seed)
-            # ────────────────────────────────────────────────────────
+
             genre_rows = [(g["id"], g["name"], g["description"]) for g in STANDARD_GENRES]
             cursor.executemany("""
                 INSERT INTO genres (id, name, description)
@@ -894,9 +845,6 @@ def load_to_mysql(
             """, genre_rows)
             report["inserted_records"]["genres"] = len(genre_rows)
 
-            # ────────────────────────────────────────────────────────
-            # 2. USERS (Preserve local credentials, upsert Last.fm metadata)
-            # ────────────────────────────────────────────────────────
             cursor.execute("SELECT id, username, email, source_id, source_namespace FROM users")
             existing_users = cursor.fetchall()
             user_id_map: Dict[str, int] = {}
@@ -951,7 +899,7 @@ def load_to_mysql(
                 """, update_user_rows)
 
             if new_user_rows:
-                # Chunked insert
+
                 for i in range(0, len(new_user_rows), batch_size):
                     chunk = new_user_rows[i:i + batch_size]
                     cursor.executemany("""
@@ -962,7 +910,6 @@ def load_to_mysql(
                             source_id = VALUES(source_id)
                     """, chunk)
 
-            # Rebuild complete user ID mapping
             cursor.execute("SELECT id, username, source_id, source_namespace FROM users")
             for uid, uname, s_id, s_ns in cursor.fetchall():
                 if s_id and s_ns:
@@ -975,9 +922,6 @@ def load_to_mysql(
             report["inserted_records"]["users"] = len(new_user_rows)
             report["updated_records"]["users"] = len(update_user_rows)
 
-            # ────────────────────────────────────────────────────────
-            # 3. ARTISTS (Enrich existing, insert new without duplicates)
-            # ────────────────────────────────────────────────────────
             cursor.execute("SELECT id, name, mbid, source_id, source_namespace FROM artists")
             artist_id_map: Dict[str, int] = {}
             for aid, name, mbid, s_id, s_ns in cursor.fetchall():
@@ -1036,7 +980,6 @@ def load_to_mysql(
                         VALUES (%s, %s, %s, %s, %s, %s)
                     """, chunk)
 
-            # Rebuild artist lookup
             cursor.execute("SELECT id, name, mbid, source_id, source_namespace FROM artists")
             artist_id_map.clear()
             artist_name_to_db_id: Dict[str, int] = {}
@@ -1051,9 +994,6 @@ def load_to_mysql(
             report["inserted_records"]["artists"] = len(new_artists)
             report["updated_records"]["artists"] = len(update_artists)
 
-            # ────────────────────────────────────────────────────────
-            # 4. SONGS (Safe lookup by artist + title/mbid)
-            # ────────────────────────────────────────────────────────
             cursor.execute("SELECT id, title, artist_id, track_mbid, source_id, source_namespace FROM songs")
             song_lookup: Dict[Tuple[int, str], int] = {}
             song_mbid_lookup: Dict[Tuple[int, str], int] = {}
@@ -1112,7 +1052,6 @@ def load_to_mysql(
                         VALUES (%s, %s, %s, %s, %s, %s, %s)
                     """, chunk)
 
-            # Rebuild song lookup
             cursor.execute("SELECT id, title, artist_id, track_mbid FROM songs")
             song_lookup.clear()
             for sid, title, art_id, tra_mbid in cursor.fetchall():
@@ -1121,9 +1060,6 @@ def load_to_mysql(
             report["inserted_records"]["songs"] = len(new_songs)
             report["updated_records"]["songs"] = len(update_songs)
 
-            # ────────────────────────────────────────────────────────
-            # 5. LISTENING HISTORY (Chunked batch insert with INSERT IGNORE)
-            # ────────────────────────────────────────────────────────
             cursor.execute("SELECT COUNT(*) FROM listening_history")
             lh_before = cursor.fetchone()[0]
 
@@ -1167,9 +1103,6 @@ def load_to_mysql(
             report["duplicate_records"]["listening_history"] = lh_duplicate
             report["duplicate_records"]["skipped_scrobbles"] = skipped_scrobbles
 
-            # ────────────────────────────────────────────────────────
-            # 6. AGGREGATED LISTENING COUNTS
-            # ────────────────────────────────────────────────────────
             if aggregated_plays:
                 agg_rows = []
                 for ap in aggregated_plays:
@@ -1198,7 +1131,6 @@ def load_to_mysql(
                     """, chunk)
                 report["inserted_records"]["aggregated_counts"] = len(agg_rows)
 
-            # Final Table Counts in MySQL
             tables = ["genres", "users", "artists", "songs", "listening_history", "aggregated_listening_counts"]
             for t in tables:
                 cursor.execute(f"SELECT COUNT(*) FROM {t}")
@@ -1217,10 +1149,6 @@ def load_to_mysql(
         conn.close()
 
     return report
-
-# ────────────────────────────────────────────────────────────
-# 4. BACKEND JSON BRIDGE
-# ────────────────────────────────────────────────────────────
 
 def sync_backend_json_bridge(
     users: Dict[str, UserEntity],

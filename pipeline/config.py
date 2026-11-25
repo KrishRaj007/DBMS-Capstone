@@ -6,16 +6,13 @@ from pathlib import Path
 import os
 import re
 
-# Base paths
 PIPELINE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = PIPELINE_DIR.parent
 
-# Raw data source paths
 DATASET_DIR = PROJECT_ROOT / "lastfm-dataset-1K" / "lastfm-dataset-1K"
 RAW_PROFILES_FILE = DATASET_DIR / "userid-profile.tsv"
 RAW_LISTENING_FILE = DATASET_DIR / "userid-timestamp-artid-artname-traid-traname.tsv"
 
-# Intermediate cleaned data paths (Clear separation: Raw -> Cleaned Intermediate -> Database)
 DATA_DIR = PROJECT_ROOT / "data"
 CLEANED_DIR = DATA_DIR / "cleaned"
 USERS_CLEANED_FILE = CLEANED_DIR / "users.jsonl"
@@ -26,11 +23,9 @@ LISTENING_CLEANED_FILE = CLEANED_DIR / "listening_history.jsonl"
 REJECTED_RECORDS_FILE = CLEANED_DIR / "rejected_records.jsonl"
 METRICS_FILE = CLEANED_DIR / "pipeline_metrics.json"
 
-# Target Database paths
 SQLITE_DB_PATH = DATA_DIR / "music_analytics.sqlite"
 MOCK_STORE_JSON_PATH = PROJECT_ROOT / "Backend" / "db" / "importedData.json"
 
-# Load database settings from Backend/.env if available
 def load_env_file(filepath: Path):
     config = {}
     if filepath.is_file():
@@ -50,18 +45,15 @@ DB_USER = os.getenv("DB_USER", ENV_CONFIG.get("DB_USER", "root"))
 DB_PASSWORD = os.getenv("DB_PASSWORD", ENV_CONFIG.get("DB_PASSWORD", ""))
 DB_NAME = os.getenv("DB_NAME", ENV_CONFIG.get("DB_NAME", "music_analytics"))
 
-# Validation parameters & thresholds
 MIN_AGE = 5
 MAX_AGE = 120
 ALLOWED_GENDERS = {"m", "f"}
 
-# Regex for UUID v4 / hex formats
 UUID_REGEX = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
     re.IGNORECASE
 )
 
-# Standard Genre Taxonomy
 STANDARD_GENRES = [
     {"id": 1, "name": "Pop", "description": "Popular mainstream music with catchy melodies"},
     {"id": 2, "name": "Rock", "description": "Guitar-driven music with powerful rhythms"},
@@ -75,7 +67,6 @@ STANDARD_GENRES = [
     {"id": 10, "name": "Metal", "description": "Heavy, amplified rock music"},
 ]
 
-# Processing limits & chunk defaults
 DEFAULT_CHUNK_SIZE = 50000
-DEFAULT_DEV_LIMIT = 100000  # Default scrobbles to process for standard run (use --limit 0 for full 19M)
+DEFAULT_DEV_LIMIT = 100000
 PROGRESS_INTERVAL = 25000

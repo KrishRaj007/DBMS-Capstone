@@ -11,14 +11,12 @@ import sys
 import time
 from typing import Dict, Any, List
 
-# Reconfigure stdout for utf-8 on Windows
 if sys.platform == "win32":
     try:
         sys.stdout.reconfigure(encoding="utf-8")
     except Exception:
         pass
 
-# Ensure pipeline root is in sys.path
 PIPELINE_ROOT = Path(__file__).resolve().parent.parent
 if str(PIPELINE_ROOT) not in sys.path:
     sys.path.insert(0, str(PIPELINE_ROOT))
@@ -75,7 +73,6 @@ def run_pipeline(
 
     engine = DeduplicationEngine()
 
-    # Prime deduplication engine from existing database to preserve existing PKs/FKs and avoid re-import duplicates
     primed_source = "None"
     if not skip_mysql:
         try:
@@ -102,7 +99,6 @@ def run_pipeline(
     rejected_records: List[Dict[str, Any]] = []
     scrobbles_buffer: List[Dict[str, Any]] = []
 
-    # Reset intermediate scrobble and rejected logs
     append_intermediate_scrobbles([], reset=True)
     append_rejected_records([], reset=True)
 
@@ -131,9 +127,6 @@ def run_pipeline(
         }
     }
 
-    # ────────────────────────────────────────────────────────────
-    # PHASE 1: USER PROFILES ETL
-    # ────────────────────────────────────────────────────────────
     print("\n[Stage 1-5] Processing User Profiles (userid-profile.tsv)...")
     t0_prof = time.time()
     for raw_rec in extract_profiles(RAW_PROFILES_FILE):
@@ -167,9 +160,6 @@ def run_pipeline(
           f"({metrics['profiles']['accepted']:,} accepted, {metrics['profiles']['skipped']:,} skipped duplicates, "
           f"{metrics['profiles']['rejected']:,} rejected)")
 
-    # ────────────────────────────────────────────────────────────
-    # PHASE 2: SCROBBLE LISTENING HISTORY CHUNKED ETL
-    # ────────────────────────────────────────────────────────────
     print(f"\n[Stage 1-5] Processing Scrobbles (userid-timestamp-artid-artname-traid-traname.tsv)...")
     t0_scrob = time.time()
     total_scrobbles_processed = 0
@@ -187,7 +177,6 @@ def run_pipeline(
             total_scrobbles_processed += 1
             metrics["scrobbles"]["processed"] += 1
 
-            # Stage 2: Validate
             val = validate_listening_record(raw_rec)
             if not val.is_valid:
                 metrics["scrobbles"]["rejected"] += 1
@@ -203,14 +192,12 @@ def run_pipeline(
                 })
                 continue
 
-            # Stage 3 & 4: Clean & Transform
             artist_ent, song_ent, scrobble_ent = transform_scrobble_entity(
                 val.sanitized_fields,
                 raw_rec.source_file,
                 raw_rec.line_number
             )
 
-            # Stage 5: Deduplicate
             art_id, _ = engine.process_artist(artist_ent)
             song_id, _ = engine.process_song(song_ent, art_id)
 
@@ -221,7 +208,6 @@ def run_pipeline(
             else:
                 metrics["scrobbles"]["skipped"] += 1
 
-        # Append intermediate chunk
         if chunk_scrobbles:
             append_intermediate_scrobbles(chunk_scrobbles)
             scrobbles_buffer.extend(chunk_scrobbles)
@@ -238,9 +224,6 @@ def run_pipeline(
     print(f"\n  ✓ Completed Scrobble Extraction & Transformation in {dur_scrob:.2f}s "
           f"({total_scrobbles_processed/dur_scrob:,.0f} rows/s overall throughput)")
 
-    # ────────────────────────────────────────────────────────────
-    # PHASE 3: WRITE CLEANED INTERMEDIATE DATA LAYER
-    # ────────────────────────────────────────────────────────────
     print("\n[Stage 6] Writing Cleaned Intermediate Layer (data/cleaned/)...")
     write_intermediate_genres()
     write_intermediate_users(engine.users)
@@ -248,15 +231,11 @@ def run_pipeline(
     write_intermediate_songs(engine.songs_by_id, engine.artists_by_id)
     print("  ✓ Staged Cleaned Entities into JSONL (users, artists, genres, songs, listening_history, rejected)")
 
-    # ────────────────────────────────────────────────────────────
-    # PHASE 4: TARGET DATABASE LOADING
-    # ────────────────────────────────────────────────────────────
     sqlite_counts = {}
     mysql_report = {}
     if not export_cleaned_only:
         print("\n[Stage 6] Loading into Relational Databases...")
 
-        # 1. Primary MySQL Target Loader
         if not skip_mysql:
             print("  → Populating MySQL database (Primary Data Source)...")
             mysql_report = load_to_mysql(
@@ -273,7 +252,6 @@ def run_pipeline(
         else:
             print("  ℹ MySQL loading skipped via --skip-mysql flag.")
 
-        # 2. SQLite Relational Store (Secondary / Backup Store)
         print(f"  → Populating SQLite database: {SQLITE_DB_PATH} ...")
         sqlite_counts = load_to_sqlite(
             users=engine.users,
@@ -284,7 +262,6 @@ def run_pipeline(
         )
         print(f"    ✓ SQLite loaded: {sqlite_counts}")
 
-        # 3. Backend JSON Bridge (for offline mock test runs)
         sync_backend_json_bridge(
             users=engine.users,
             artists=engine.artists_by_id,
@@ -294,15 +271,11 @@ def run_pipeline(
         )
         print("  ✓ Synced data with Backend API JSON bridge.")
 
-    # ────────────────────────────────────────────────────────────
-    # PHASE 5: VERIFICATION & AUDIT
-    # ────────────────────────────────────────────────────────────
     verification_summary = None
     mysql_verification_summary = None
     if run_verify and not export_cleaned_only:
         print("\n[Stage 7] Running Automated Post-Load Verification & Audit...")
 
-        # Verify MySQL (Primary)
         if not skip_mysql:
             print("  --- MySQL Integrity Audit ---")
             mysql_v_report = run_mysql_verification()
@@ -318,7 +291,6 @@ def run_pipeline(
                 print(f"  [{mark}] {c.name}: {c.details}")
             print(f"  🎯 MySQL Quality Score: {mysql_v_report.quality_score}%")
 
-        # Verify SQLite
         print("  --- SQLite Integrity Audit ---")
         v_report = run_verification()
         verification_summary = {
