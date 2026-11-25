@@ -8,7 +8,6 @@ describe('Frontend Integration Suite', () => {
   const testUsername = `fe_user_${uniqueId}`;
   const testEmail = `fe_${uniqueId}@example.com`;
 
-  // ── Authentication & Token Flow Integration ──
   it('registers and provides credentials matching Frontend AuthContext format', async () => {
     const res = await request(app)
       .post('/api/auth/register')
@@ -25,9 +24,8 @@ describe('Frontend Integration Suite', () => {
     testUser = res.body.user;
   });
 
-  // ── SongItem.jsx Integration: Play Song Action ──
   it('simulates Frontend SongItem handlePlay workflow and verifies session logging', async () => {
-    const songId = 3; // DJ Phantom - Bassline Eclipse
+    const songId = 3;
     const duration = 210;
 
     const playRes = await request(app)
@@ -38,13 +36,11 @@ describe('Frontend Integration Suite', () => {
     expect(playRes.status).toBe(201);
     expect(playRes.body.message).toMatch(/listen logged/i);
 
-    // Verify song detail reflects updated play count
     const detailRes = await request(app).get(`/api/songs/${songId}`);
     expect(detailRes.status).toBe(200);
     expect(detailRes.body.play_count).toBeGreaterThanOrEqual(1);
   });
 
-  // ── SongItem.jsx Integration: Rate Song Action ──
   it('simulates Frontend SongItem handleRate workflow and verifies rating aggregation', async () => {
     const songId = 3;
     const ratingValue = 5;
@@ -57,7 +53,6 @@ describe('Frontend Integration Suite', () => {
     expect(rateRes.status).toBe(200);
     expect(rateRes.body.message).toMatch(/rating saved/i);
 
-    // Verify rating endpoint returns user rating and updated avg
     const checkRes = await request(app)
       .get(`/api/ratings/song/${songId}`)
       .set('Authorization', `Bearer ${authToken}`);
@@ -67,9 +62,8 @@ describe('Frontend Integration Suite', () => {
     expect(checkRes.body.avg_rating).toBeGreaterThanOrEqual(1);
   });
 
-  // ── Standard Widgets & Form Error States ──
   it('returns clean error responses that Frontend ToastContext displays to user', async () => {
-    // 1. Missing song_id on listen
+
     const errRes1 = await request(app)
       .post('/api/listen')
       .set('Authorization', `Bearer ${authToken}`)
@@ -77,7 +71,6 @@ describe('Frontend Integration Suite', () => {
     expect(errRes1.status).toBe(400);
     expect(errRes1.body).toHaveProperty('error');
 
-    // 2. Out of range rating
     const errRes2 = await request(app)
       .post('/api/ratings')
       .set('Authorization', `Bearer ${authToken}`)
@@ -85,13 +78,11 @@ describe('Frontend Integration Suite', () => {
     expect(errRes2.status).toBe(400);
     expect(errRes2.body.error).toMatch(/1-5/);
 
-    // 3. Unauthorized request
     const errRes3 = await request(app).get('/api/analytics/personal');
     expect(errRes3.status).toBe(401);
     expect(errRes3.body.error).toMatch(/Authentication required/i);
   });
 
-  // ── Site Search Contract ──
   it('supports real-time search queries from Frontend Header and Library', async () => {
     const query = 'Neon';
     const res = await request(app).get(`/api/songs?search=${encodeURIComponent(query)}`);
@@ -106,7 +97,6 @@ describe('Frontend Integration Suite', () => {
     });
   });
 
-  // ── Design System Baseline Verification ──
   it('verifies design system tokens and standard baseline component contracts', () => {
     const DESIGN_SYSTEM_TOKENS = {
       background: '#1B2A4A',

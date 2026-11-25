@@ -1,11 +1,3 @@
-/**
- * Database Migration Runner
- * Safely executes pending SQL migrations in Backend/db/migrations/
- * Tracks applied migrations in the schema_migrations table.
- * Preserves all existing tables, foreign keys, user accounts, and data.
- *
- * Usage: node Backend/db/migrate.js
- */
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
@@ -37,7 +29,6 @@ async function runMigrations() {
     await conn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
     await conn.query(`USE \`${dbName}\``);
 
-    // Track migration history
     await conn.query(`
       CREATE TABLE IF NOT EXISTS schema_migrations (
         id INT PRIMARY KEY AUTO_INCREMENT,

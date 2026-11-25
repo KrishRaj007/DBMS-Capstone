@@ -1,14 +1,5 @@
--- ============================================================
--- Music Recommendation & Listening Analytics System
--- Database Schema — MySQL 8+ (Adapted & Extended)
--- ============================================================
-
 CREATE DATABASE IF NOT EXISTS music_analytics;
 USE music_analytics;
-
--- ────────────────────────────────────────────────────────────
--- TABLES
--- ────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS users (
   id               INT PRIMARY KEY AUTO_INCREMENT,
@@ -151,12 +142,6 @@ CREATE TABLE IF NOT EXISTS user_preferences (
   INDEX idx_up_user (user_id)
 );
 
--- ────────────────────────────────────────────────────────────
--- AGGREGATED LISTENING COUNTS
--- Stores pre-aggregated play counts without fabricating timestamps,
--- user identities, completion rates, or listening sessions.
--- ────────────────────────────────────────────────────────────
-
 CREATE TABLE IF NOT EXISTS aggregated_listening_counts (
   id               INT PRIMARY KEY AUTO_INCREMENT,
   user_id          INT DEFAULT NULL,
@@ -176,10 +161,6 @@ CREATE TABLE IF NOT EXISTS aggregated_listening_counts (
   INDEX idx_alc_artist (artist_id),
   INDEX idx_alc_song   (song_id)
 );
-
--- ────────────────────────────────────────────────────────────
--- STAGING TABLES (For Atomic, Isolated ETL Bulk Imports)
--- ────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS staging_users (
   source_id        VARCHAR(100) NOT NULL,
@@ -236,10 +217,6 @@ CREATE TABLE IF NOT EXISTS staging_aggregated_counts (
   source_namespace  VARCHAR(50)  NOT NULL DEFAULT 'dataset',
   INDEX idx_sac_lookup (source_namespace, user_source_id, artist_source_id, song_source_id)
 );
-
--- ────────────────────────────────────────────────────────────
--- VIEWS
--- ────────────────────────────────────────────────────────────
 
 CREATE OR REPLACE VIEW top_songs_view AS
 SELECT
@@ -330,10 +307,6 @@ FROM users u
   LEFT JOIN ratings r ON u.id = r.user_id
 GROUP BY u.id, u.username, lh_stats.total_listens, agg_stats.total_agg_listens, lh_stats.unique_songs, lh_stats.total_listen_seconds;
 
--- ────────────────────────────────────────────────────────────
--- STORED PROCEDURES
--- ────────────────────────────────────────────────────────────
-
 DELIMITER //
 
 DROP PROCEDURE IF EXISTS sp_get_recommendations //
@@ -345,17 +318,13 @@ CREATE PROCEDURE sp_get_recommendations(
 BEGIN
   DECLARE v_user_activity INT DEFAULT 0;
 
-  -- Count total user interactions (listens + ratings)
   SELECT (
     (SELECT COUNT(*) FROM listening_history WHERE user_id = p_user_id) +
     (SELECT COUNT(*) FROM ratings WHERE user_id = p_user_id)
   ) INTO v_user_activity;
 
   IF v_user_activity = 0 THEN
-    -- ────────────────────────────────────────────────────────────
-    -- COLD-START BASELINE: Real catalog popularity without false personalization
-    -- Strictly excludes any tracks already in user history
-    -- ────────────────────────────────────────────────────────────
+
     SELECT
       s.id,
       s.title,
@@ -398,10 +367,7 @@ BEGIN
     LIMIT p_limit;
 
   ELSE
-    -- ────────────────────────────────────────────────────────────
-    -- ACTIVE USERS: Personalized Content-Based & Preference Scoring
-    -- Strictly excludes tracks the user has already listened to
-    -- ────────────────────────────────────────────────────────────
+
     SELECT
       s.id,
       s.title,
@@ -473,10 +439,6 @@ BEGIN
   ON DUPLICATE KEY UPDATE
     preference_weight = VALUES(preference_weight);
 END //
-
--- ────────────────────────────────────────────────────────────
--- TRIGGERS
--- ────────────────────────────────────────────────────────────
 
 CREATE TRIGGER trg_after_listen
 AFTER INSERT ON listening_history

@@ -8,7 +8,7 @@ describe('Recommendation Logic Suite', () => {
   const uniqueId = Date.now();
 
   beforeAll(async () => {
-    // 1. Cold start user (zero listening history)
+
     const coldRes = await request(app)
       .post('/api/auth/register')
       .send({
@@ -18,7 +18,6 @@ describe('Recommendation Logic Suite', () => {
       });
     coldStartToken = coldRes.body.token;
 
-    // 2. Active user (with listening history)
     const activeRes = await request(app)
       .post('/api/auth/register')
       .send({
@@ -29,7 +28,6 @@ describe('Recommendation Logic Suite', () => {
     activeUserToken = activeRes.body.token;
     activeUserId = activeRes.body.user.id;
 
-    // Active user listens to songs 1 and 2
     await request(app)
       .post('/api/listen')
       .set('Authorization', `Bearer ${activeUserToken}`)
@@ -40,7 +38,6 @@ describe('Recommendation Logic Suite', () => {
       .set('Authorization', `Bearer ${activeUserToken}`)
       .send({ song_id: 2, duration_listened: 198 });
 
-    // Active user rates song 1
     await request(app)
       .post('/api/ratings')
       .set('Authorization', `Bearer ${activeUserToken}`)
@@ -63,13 +60,11 @@ describe('Recommendation Logic Suite', () => {
       expect(Array.isArray(res.body.recommendations)).toBe(true);
       expect(res.body.recommendations.length).toBeGreaterThan(0);
 
-      // Cold start user flags
       expect(res.body.is_personalized).toBe(false);
       expect(res.body.strategy).toBe('popularity_baseline');
       expect(res.body.user_state).toBe('cold_start');
       expect(res.body.explanation).toMatch(/Platform Baseline|Popular/i);
 
-      // Check item properties
       const item = res.body.recommendations[0];
       expect(item).toHaveProperty('id');
       expect(item).toHaveProperty('title');
@@ -85,8 +80,6 @@ describe('Recommendation Logic Suite', () => {
       expect(res.status).toBe(200);
       const recommendedSongIds = res.body.recommendations.map(s => s.id);
 
-      // Active user listened to song 1 and song 2
-      // Neither should be recommended!
       expect(recommendedSongIds).not.toContain(1);
       expect(recommendedSongIds).not.toContain(2);
     });

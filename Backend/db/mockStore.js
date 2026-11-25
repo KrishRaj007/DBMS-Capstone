@@ -37,7 +37,7 @@ const ARTISTS = [
 ];
 
 const RAW_SONGS = [
-  // Pop (genre 1)
+
   { title: 'Starlight Boulevard',   artist_id: 1,  genre_id: 1,  album: 'Neon Dreams', duration_seconds: 214, release_date: '2024-03-15' },
   { title: 'Electric Hearts',       artist_id: 1,  genre_id: 1,  album: 'Neon Dreams', duration_seconds: 198, release_date: '2024-03-15' },
   { title: 'Dancing in the Glow',   artist_id: 1,  genre_id: 1,  album: 'Midnight Sun', duration_seconds: 227, release_date: '2023-08-20' },
@@ -45,7 +45,6 @@ const RAW_SONGS = [
   { title: 'Golden Hour',           artist_id: 11, genre_id: 1,  album: 'Horizons', duration_seconds: 189, release_date: '2024-01-10' },
   { title: 'Paper Moon',            artist_id: 11, genre_id: 1,  album: 'Horizons', duration_seconds: 241, release_date: '2024-01-10' },
 
-  // Rock (genre 2)
   { title: 'Highway Thunder',       artist_id: 2,  genre_id: 2,  album: 'Rebel Heart', duration_seconds: 265, release_date: '2023-11-05' },
   { title: 'Burning Bridges',       artist_id: 2,  genre_id: 2,  album: 'Rebel Heart', duration_seconds: 298, release_date: '2023-11-05' },
   { title: 'Iron Will',             artist_id: 2,  genre_id: 2,  album: 'Steel & Stone', duration_seconds: 312, release_date: '2022-06-18' },
@@ -53,7 +52,6 @@ const RAW_SONGS = [
   { title: 'Echoes of Tomorrow',    artist_id: 12, genre_id: 2,  album: 'Tempest', duration_seconds: 278, release_date: '2024-02-28' },
   { title: 'Storm Chaser',          artist_id: 12, genre_id: 2,  album: 'Tempest', duration_seconds: 255, release_date: '2024-02-28' },
 
-  // Hip-Hop (genre 3)
   { title: 'Crown & Glory',         artist_id: 5,  genre_id: 3,  album: 'The Blueprint', duration_seconds: 232, release_date: '2024-04-01' },
   { title: 'Street Wisdom',         artist_id: 5,  genre_id: 3,  album: 'The Blueprint', duration_seconds: 201, release_date: '2024-04-01' },
   { title: 'Concrete Jungle',       artist_id: 5,  genre_id: 3,  album: 'Urban Tales', duration_seconds: 218, release_date: '2023-05-12' },
@@ -61,7 +59,6 @@ const RAW_SONGS = [
   { title: 'Midnight Hustle',       artist_id: 15, genre_id: 3,  album: 'Throne Room', duration_seconds: 210, release_date: '2024-06-15' },
   { title: 'Legacy',                artist_id: 15, genre_id: 3,  album: 'Throne Room', duration_seconds: 248, release_date: '2024-06-15' },
 
-  // R&B (genre 4)
   { title: 'Velvet Sky',            artist_id: 4,  genre_id: 4,  album: 'Silk & Soul', duration_seconds: 256, release_date: '2024-02-14' },
   { title: 'Slow Burn',             artist_id: 4,  genre_id: 4,  album: 'Silk & Soul', duration_seconds: 234, release_date: '2024-02-14' },
   { title: 'Moonlit Serenade',      artist_id: 4,  genre_id: 4,  album: 'After Hours', duration_seconds: 279, release_date: '2023-09-01' },
@@ -69,7 +66,6 @@ const RAW_SONGS = [
   { title: 'Tender Love',           artist_id: 14, genre_id: 4,  album: 'Dusk Till Dawn', duration_seconds: 245, release_date: '2024-05-20' },
   { title: 'Butterflies',           artist_id: 14, genre_id: 4,  album: 'Dusk Till Dawn', duration_seconds: 198, release_date: '2024-05-20' },
 
-  // Electronic (genre 5)
   { title: 'Neon Nights',           artist_id: 3,  genre_id: 5,  album: 'Digital Dreams', duration_seconds: 342, release_date: '2024-01-20' },
   { title: 'Pulse Wave',            artist_id: 3,  genre_id: 5,  album: 'Digital Dreams', duration_seconds: 385, release_date: '2024-01-20' },
   { title: 'Cyber Dawn',            artist_id: 3,  genre_id: 5,  album: 'Binary Sunset', duration_seconds: 298, release_date: '2023-07-07' },
@@ -77,7 +73,6 @@ const RAW_SONGS = [
   { title: 'Digital Love',          artist_id: 13, genre_id: 5,  album: 'Synthwave City', duration_seconds: 276, release_date: '2024-03-30' },
   { title: 'Future Shock',          artist_id: 13, genre_id: 5,  album: 'Synthwave City', duration_seconds: 334, release_date: '2024-03-30' },
 
-  // Jazz (genre 6)
   { title: 'Blue Monday',           artist_id: 6,  genre_id: 6,  album: 'Late Night Sessions', duration_seconds: 367, release_date: '2023-10-15' },
   { title: 'Satin Smooth',          artist_id: 6,  genre_id: 6,  album: 'Late Night Sessions', duration_seconds: 289, release_date: '2023-10-15' },
   { title: 'Impromptu No. 5',       artist_id: 6,  genre_id: 6,  album: 'Free Flow', duration_seconds: 423, release_date: '2022-12-01' },
@@ -85,7 +80,6 @@ const RAW_SONGS = [
   { title: 'Cool Breeze',           artist_id: 16, genre_id: 6,  album: 'City Blues', duration_seconds: 267, release_date: '2024-04-18' },
   { title: 'Swing Time',            artist_id: 16, genre_id: 6,  album: 'City Blues', duration_seconds: 245, release_date: '2024-04-18' },
 
-  // Classical (genre 7)
   { title: 'Sonata in D Minor',     artist_id: 7,  genre_id: 7,  album: 'Nocturnes', duration_seconds: 480, release_date: '2023-03-25' },
   { title: 'Prelude to Dawn',       artist_id: 7,  genre_id: 7,  album: 'Nocturnes', duration_seconds: 356, release_date: '2023-03-25' },
   { title: 'Elegy for Strings',     artist_id: 7,  genre_id: 7,  album: 'Reflections', duration_seconds: 512, release_date: '2022-09-10' },
@@ -93,7 +87,6 @@ const RAW_SONGS = [
   { title: 'Whispers of Vienna',    artist_id: 17, genre_id: 7,  album: 'Four Seasons', duration_seconds: 398, release_date: '2024-07-01' },
   { title: 'Midnight Waltz',        artist_id: 17, genre_id: 7,  album: 'Four Seasons', duration_seconds: 367, release_date: '2024-07-01' },
 
-  // Country (genre 8)
   { title: 'Dirt Road Anthem',      artist_id: 8,  genre_id: 8,  album: 'Backroads', duration_seconds: 223, release_date: '2023-12-10' },
   { title: 'Sunset Porch',          artist_id: 8,  genre_id: 8,  album: 'Backroads', duration_seconds: 198, release_date: '2023-12-10' },
   { title: 'Old Pickup Truck',      artist_id: 8,  genre_id: 8,  album: 'Simple Life', duration_seconds: 245, release_date: '2023-04-14' },
@@ -101,7 +94,6 @@ const RAW_SONGS = [
   { title: 'Campfire Stories',      artist_id: 18, genre_id: 8,  album: 'Wild Petals', duration_seconds: 234, release_date: '2024-05-05' },
   { title: 'Morning Dew',           artist_id: 18, genre_id: 8,  album: 'Wild Petals', duration_seconds: 189, release_date: '2024-05-05' },
 
-  // Indie (genre 9)
   { title: 'Faded Polaroids',       artist_id: 9,  genre_id: 9,  album: 'Lo-Fi Diaries', duration_seconds: 234, release_date: '2024-02-10' },
   { title: 'Rooftop View',          artist_id: 9,  genre_id: 9,  album: 'Lo-Fi Diaries', duration_seconds: 198, release_date: '2024-02-10' },
   { title: 'Analog Days',           artist_id: 9,  genre_id: 9,  album: 'Warm Tones', duration_seconds: 256, release_date: '2023-06-22' },
@@ -109,7 +101,6 @@ const RAW_SONGS = [
   { title: 'Wishing Well',          artist_id: 19, genre_id: 9,  album: 'Postcards', duration_seconds: 218, release_date: '2024-08-12' },
   { title: 'Paper Airplanes',       artist_id: 19, genre_id: 9,  album: 'Postcards', duration_seconds: 187, release_date: '2024-08-12' },
 
-  // Metal (genre 10)
   { title: 'Wrath Unchained',       artist_id: 10, genre_id: 10, album: 'Forged in Fire', duration_seconds: 345, release_date: '2023-10-31' },
   { title: 'Crimson Fury',          artist_id: 10, genre_id: 10, album: 'Forged in Fire', duration_seconds: 312, release_date: '2023-10-31' },
   { title: 'Titan\'s Fall',         artist_id: 10, genre_id: 10, album: 'Apocalypse', duration_seconds: 378, release_date: '2022-08-15' },
@@ -120,7 +111,6 @@ const RAW_SONGS = [
 
 const SONGS = RAW_SONGS.map((s, idx) => ({ id: idx + 1, ...s, source_namespace: 'local' }));
 
-// Safely load and merge pipeline-imported data without colliding with local primary keys
 const fs = require('fs');
 const path = require('path');
 const importedPath = path.resolve(__dirname, 'importedData.json');
@@ -194,7 +184,7 @@ if (fs.existsSync(importedPath)) {
       }
     }
   } catch (err) {
-    // Non-fatal: mockStore will operate on baseline dataset
+
   }
 }
 
@@ -205,7 +195,6 @@ const USERS = [
   { id: 3, username: 'music_lover', email: 'music@example.com', password_hash: hashedPassword, source_namespace: 'local', created_at: new Date() },
 ];
 
-// Pre-seed listening history
 const LISTENING_HISTORY = [];
 let listenId = 1;
 for (let uId = 1; uId <= 3; uId++) {
@@ -225,7 +214,6 @@ for (let uId = 1; uId <= 3; uId++) {
   }
 }
 
-// Pre-seed ratings
 const RATINGS = [];
 let ratingId = 1;
 for (let uId = 1; uId <= 3; uId++) {
@@ -235,14 +223,13 @@ for (let uId = 1; uId <= 3; uId++) {
       id: ratingId++,
       user_id: uId,
       song_id: s.id,
-      rating: 3 + Math.floor(Math.random() * 3), // 3-5 stars
+      rating: 3 + Math.floor(Math.random() * 3),
       created_at: new Date().toISOString(),
       source_namespace: 'local',
     });
   }
 }
 
-// Pre-seed playlists
 const PLAYLISTS = [
   { id: 1, user_id: 1, name: 'Chill Vibes',     description: 'Relaxing tracks for a chill evening', is_public: true, created_at: new Date(), updated_at: new Date() },
   { id: 2, user_id: 1, name: 'Workout Mix',     description: 'High-energy tracks to pump you up',   is_public: true, created_at: new Date(), updated_at: new Date() },
@@ -266,18 +253,15 @@ let nextUserId = 4;
 let nextPlaylistId = 6;
 let nextPlaylistSongId = 9;
 
-// Mock query router
 async function executeMockQuery(sql, params = []) {
   const norm = sql.trim().toLowerCase();
 
-  // 1. Auth: Check existing user
   if (norm.includes('select id from users where email = ? or username = ?')) {
     const [email, username] = params;
     const found = USERS.filter(u => u.email === email || u.username === username);
     return [found];
   }
 
-  // 2. Auth: Insert new user
   if (norm.startsWith('insert into users')) {
     const [username, email, password_hash] = params;
     const newUser = { id: nextUserId++, username, email, password_hash, source_namespace: 'local', created_at: new Date() };
@@ -285,14 +269,12 @@ async function executeMockQuery(sql, params = []) {
     return [{ insertId: newUser.id }];
   }
 
-  // 3. Auth: Login query
   if (norm.includes('from users where email = ?')) {
     const [email] = params;
     const found = USERS.filter(u => u.email === email);
     return [found];
   }
 
-  // 4. Songs: Genres list (genre_popularity_view)
   if (norm.includes('from genre_popularity_view') || (norm.includes('from genres') && norm.includes('song_count'))) {
     const rows = GENRES.map(g => {
       const gSongs = SONGS.filter(s => s.genre_id === g.id);
@@ -313,7 +295,6 @@ async function executeMockQuery(sql, params = []) {
     return [rows];
   }
 
-  // 5. Songs: Artists list & Artist detail
   if (norm.includes('from artists a') && norm.includes('where a.id = ?')) {
     const artistId = parseInt(params[0]);
     const artist = ARTISTS.find(a => a.id === artistId);
@@ -369,7 +350,6 @@ async function executeMockQuery(sql, params = []) {
     return [rows];
   }
 
-  // 6. Songs: Detail by ID
   if (norm.includes('from songs s') && norm.includes('where s.id = ?')) {
     const songId = parseInt(params[0]);
     const song = SONGS.find(s => s.id === songId);
@@ -392,18 +372,16 @@ async function executeMockQuery(sql, params = []) {
     return [[row]];
   }
 
-  // 7. Songs: Count total songs with filters
   if (norm.includes('select count(*) as total from songs')) {
     let filtered = [...SONGS];
-    // extract filters
+
     if (params.length === 1 && typeof params[0] === 'number') {
-      // genre or artist filter
+
       filtered = filtered.filter(s => s.genre_id === params[0] || s.artist_id === params[0]);
     }
     return [[{ total: filtered.length }]];
   }
 
-  // 8. Songs: List songs with search/filter/pagination
   if (norm.includes('from songs s') && norm.includes('join artists a')) {
     let list = SONGS.map(s => {
       const artist = ARTISTS.find(a => a.id === s.artist_id) || {};
@@ -427,17 +405,15 @@ async function executeMockQuery(sql, params = []) {
       };
     });
 
-    // Check search term
     const searchParam = params.find(p => typeof p === 'string' && p.startsWith('%'));
     if (searchParam) {
       const q = searchParam.replace(/%/g, '').toLowerCase();
       list = list.filter(s => s.title.toLowerCase().includes(q) || s.artist_name.toLowerCase().includes(q) || (s.album && s.album.toLowerCase().includes(q)));
     }
 
-    // Genre/artist filter
     const numParams = params.filter(p => typeof p === 'number');
     if (numParams.length >= 3) {
-      // genre or artist + limit + offset
+
       const filterVal = numParams[0];
       if (norm.includes('g.id = ?')) {
         list = list.filter(s => s.genre_id === filterVal);
@@ -448,7 +424,6 @@ async function executeMockQuery(sql, params = []) {
       }
     }
 
-    // Sorting
     if (norm.includes('play_count desc')) {
       list.sort((a, b) => b.play_count - a.play_count || a.title.localeCompare(b.title));
     } else if (norm.includes('avg_rating desc')) {
@@ -465,7 +440,6 @@ async function executeMockQuery(sql, params = []) {
     return [paged];
   }
 
-  // 9. Listening: Log a listen
   if (norm.startsWith('insert into listening_history')) {
     const [userId, songId, duration] = params;
     LISTENING_HISTORY.push({
@@ -479,14 +453,12 @@ async function executeMockQuery(sql, params = []) {
     return [{ insertId: listenId }];
   }
 
-  // 10. Listening: User history count
   if (norm.includes('count(*) as total from listening_history where user_id = ?')) {
     const [userId] = params;
     const total = LISTENING_HISTORY.filter(lh => lh.user_id === userId).length;
     return [[{ total }]];
   }
 
-  // 11. Listening: User history list
   if (norm.includes('from listening_history lh') && norm.includes('where lh.user_id = ?') && !norm.includes('group by')) {
     const [userId, limit = 30, offset = 0] = params;
     const userListens = LISTENING_HISTORY.filter(lh => lh.user_id === userId)
@@ -513,7 +485,6 @@ async function executeMockQuery(sql, params = []) {
     return [rows];
   }
 
-  // 12. Ratings: Upsert rating
   if (norm.startsWith('insert into ratings')) {
     const [userId, songId, rating] = params;
     const uId = parseInt(userId);
@@ -536,7 +507,6 @@ async function executeMockQuery(sql, params = []) {
     return [{ message: 'Rating saved' }];
   }
 
-  // 13. Ratings: Get user's ratings
   if (norm.includes('from ratings r') && norm.includes('where r.user_id = ?')) {
     const [userId] = params;
     const userRatings = RATINGS.filter(r => r.user_id === userId)
@@ -560,7 +530,6 @@ async function executeMockQuery(sql, params = []) {
     return [rows];
   }
 
-  // 14. Ratings: Song stats
   if (norm.includes('select coalesce(avg(rating),0) as avg_rating, count(*) as count from ratings where song_id = ?')) {
     const [songId] = params;
     const songRatings = RATINGS.filter(r => r.song_id === parseInt(songId));
@@ -568,14 +537,12 @@ async function executeMockQuery(sql, params = []) {
     return [[{ avg_rating: avg, count: songRatings.length }]];
   }
 
-  // 15. Ratings: Single user rating for song
   if (norm.includes('select rating from ratings where user_id = ? and song_id = ?')) {
     const [userId, songId] = params;
     const match = RATINGS.filter(r => r.user_id === userId && r.song_id === parseInt(songId));
     return [match];
   }
 
-  // 16. Playlists: List for user
   if (norm.includes('from playlists p') && norm.includes('where p.user_id = ?')) {
     const [userId] = params;
     const userPlaylists = PLAYLISTS.filter(p => p.user_id === userId).map(p => {
@@ -585,7 +552,6 @@ async function executeMockQuery(sql, params = []) {
     return [userPlaylists];
   }
 
-  // 17. Playlists: Create
   if (norm.startsWith('insert into playlists')) {
     const [userId, name, description, is_public] = params;
     const newPl = {
@@ -601,14 +567,12 @@ async function executeMockQuery(sql, params = []) {
     return [{ insertId: newPl.id }];
   }
 
-  // 18. Playlists: Detail by ID
   if (norm.includes('from playlists where id = ?')) {
     const [id] = params;
     const pl = PLAYLISTS.find(p => p.id === parseInt(id));
     return [pl ? [pl] : []];
   }
 
-  // 19. Playlists: Songs in playlist
   if (norm.includes('from playlist_songs ps') && norm.includes('where ps.playlist_id = ?')) {
     const [plId] = params;
     const pSongs = PLAYLIST_SONGS.filter(ps => ps.playlist_id === parseInt(plId))
@@ -633,7 +597,6 @@ async function executeMockQuery(sql, params = []) {
     return [rows];
   }
 
-  // 20. Playlists: Delete playlist
   if (norm.startsWith('delete from playlists where id = ?')) {
     const [id] = params;
     const idx = PLAYLISTS.findIndex(p => p.id === parseInt(id));
@@ -644,7 +607,6 @@ async function executeMockQuery(sql, params = []) {
     return [{ affectedRows: 0 }];
   }
 
-  // 20.5. Playlists: Max position
   if (norm.includes('max(position)') && norm.includes('from playlist_songs')) {
     const [plId] = params;
     const pSongs = PLAYLIST_SONGS.filter(ps => ps.playlist_id === parseInt(plId));
@@ -652,7 +614,6 @@ async function executeMockQuery(sql, params = []) {
     return [[{ maxPos }]];
   }
 
-  // 21. Playlists: Add song to playlist
   if (norm.startsWith('insert into playlist_songs')) {
     const [plId, songId, position] = params;
     PLAYLIST_SONGS.push({
@@ -665,7 +626,6 @@ async function executeMockQuery(sql, params = []) {
     return [{ insertId: nextPlaylistSongId }];
   }
 
-  // 22. Playlists: Remove song from playlist
   if (norm.includes('delete ps from playlist_songs ps')) {
     const [plId, songId] = params;
     const idx = PLAYLIST_SONGS.findIndex(ps => ps.playlist_id === parseInt(plId) && ps.song_id === parseInt(songId));
@@ -676,16 +636,14 @@ async function executeMockQuery(sql, params = []) {
     return [{ affectedRows: 0 }];
   }
 
-  // 23. Recommendations: Adaptive recommendation engine (CF, Content-Based, and Popularity Baseline)
   if (norm.includes('sp_get_recommendations') || norm.includes('order by coalesce(rc.avg_rating')) {
     const userId = parseInt(params[0]) || 1;
     const limit = parseInt(params[params.length - 1]) || 6;
     const recResult = computeRecommendations(userId, limit);
-    // Stored procedure returns array of result sets [rows]
+
     return [[recResult.recommendations]];
   }
 
-  // 24. Analytics: Personal overview (user_analytics_view)
   if (norm.includes('from user_analytics_view where user_id = ?')) {
     const [userId] = params;
     const uListens = LISTENING_HISTORY.filter(lh => lh.user_id === userId);
@@ -709,7 +667,6 @@ async function executeMockQuery(sql, params = []) {
     return [[overview]];
   }
 
-  // 25. Analytics: Personal top genres
   if (norm.includes('from listening_history lh') && norm.includes('group by g.id, g.name')) {
     const [userId] = params;
     const uListens = LISTENING_HISTORY.filter(lh => lh.user_id === userId);
@@ -734,7 +691,6 @@ async function executeMockQuery(sql, params = []) {
     return [rows];
   }
 
-  // 26. Analytics: Personal top artists
   if (norm.includes('group by a.id, a.name')) {
     const [userId] = params;
     const uListens = LISTENING_HISTORY.filter(lh => lh.user_id === userId);
@@ -753,7 +709,6 @@ async function executeMockQuery(sql, params = []) {
     return [rows];
   }
 
-  // 27. Analytics: Personal top songs
   if (norm.includes('group by s.id, s.title, a.name') && norm.includes('from listening_history')) {
     const [userId] = params;
     const uListens = LISTENING_HISTORY.filter(lh => lh.user_id === userId);
@@ -774,7 +729,6 @@ async function executeMockQuery(sql, params = []) {
     return [rows];
   }
 
-  // 28. Analytics: Hourly distribution
   if (norm.includes('group by hour(listened_at)')) {
     const [userId] = params;
     const uListens = LISTENING_HISTORY.filter(lh => lh.user_id === userId);
@@ -787,20 +741,18 @@ async function executeMockQuery(sql, params = []) {
     return [rows];
   }
 
-  // 29. Analytics: Day of week distribution
   if (norm.includes('group by dayofweek(listened_at)')) {
     const [userId] = params;
     const uListens = LISTENING_HISTORY.filter(lh => lh.user_id === userId);
     const counts = {};
     for (const lh of uListens) {
-      const d = new Date(lh.listened_at).getDay() + 1; // 1 = Sun
+      const d = new Date(lh.listened_at).getDay() + 1;
       counts[d] = (counts[d] || 0) + 1;
     }
     const rows = Object.entries(counts).map(([d, listens]) => ({ day: parseInt(d), listens }));
     return [rows];
   }
 
-  // 30. Analytics: Trend (Aggregated by date with actual duration sum)
   if (norm.includes('group by date(listened_at)')) {
     const [userId] = params;
     const uListens = LISTENING_HISTORY.filter(lh => lh.user_id === userId);
@@ -818,7 +770,6 @@ async function executeMockQuery(sql, params = []) {
     return [rows];
   }
 
-  // 31. Analytics: Global most played (top_songs_view)
   if (norm.includes('from top_songs_view')) {
     const rows = SONGS.map(s => {
       const artist = ARTISTS.find(a => a.id === s.artist_id) || {};
@@ -845,7 +796,6 @@ async function executeMockQuery(sql, params = []) {
     return [rows];
   }
 
-  // 32. Analytics: Global totals (Categorized by provenance & aggregation level)
   if (norm.includes('select count(*) from users') || norm.includes('as total_users')) {
     const liveAppListens = LISTENING_HISTORY.filter(lh => (lh.source_namespace || 'local') === 'local').length;
     const importedScrobbles = LISTENING_HISTORY.filter(lh => lh.source_namespace === 'lastfm').length;
@@ -865,7 +815,6 @@ async function executeMockQuery(sql, params = []) {
     }]];
   }
 
-  // 33. Analytics: Global active users (Badged with source_namespace)
   if (norm.includes('group by u.id, u.username')) {
     const rows = USERS.map(u => {
       const count = LISTENING_HISTORY.filter(lh => lh.user_id === u.id).length;
@@ -879,7 +828,6 @@ async function executeMockQuery(sql, params = []) {
     return [rows];
   }
 
-  // 34. Analytics: Global top rated songs (Based on verified ratings)
   if (norm.includes('having count(r.id)') || (norm.includes('avg(r.rating) as avg_rating') && norm.includes('from ratings r'))) {
     const ratingGroups = {};
     for (const r of RATINGS) {
@@ -911,19 +859,9 @@ async function executeMockQuery(sql, params = []) {
   return [[]];
 }
 
-/**
- * Multi-Strategy Adaptive Recommendation Engine
- * - Evaluates Collaborative Filtering only when interaction overlap exists
- * - Evaluates Content-Based Filtering only when relevant user features exist
- * - Gracefully provides a diversified Popularity Baseline for cold-start users
- * - Prevents repeatedly recommending tracks the user already listened to or rated
- * - Deduplicates by song.id and canonical (artist_id, title)
- * - Limits max 2 tracks per artist for diversity
- */
 function computeRecommendations(userId, limit = 6) {
   const targetUserId = parseInt(userId);
 
-  // 1. Target user interaction history
   const userListens = LISTENING_HISTORY.filter(lh => lh.user_id === targetUserId);
   const userRatings = RATINGS.filter(r => r.user_id === targetUserId);
 
@@ -931,7 +869,6 @@ function computeRecommendations(userId, limit = 6) {
   const ratedSongIds = new Set(userRatings.map(r => r.song_id));
   const userInteractedSongIds = new Set([...listenedSongIds, ...ratedSongIds]);
 
-  // Canonical keys already heard: artist_id + '::' + normalized_title
   const heardTrackKeys = new Set();
   for (const sId of userInteractedSongIds) {
     const s = SONGS.find(song => song.id === sId);
@@ -940,7 +877,6 @@ function computeRecommendations(userId, limit = 6) {
     }
   }
 
-  // Helper to fetch actual song stats from real data without dummy fallback values
   function getSongStats(songId) {
     const directPlays = LISTENING_HISTORY.filter(lh => lh.song_id === songId).length;
     const aggPlays = AGGREGATED_COUNTS.filter(ac => ac.song_id === songId).reduce((s, c) => s + c.play_count, 0);
@@ -955,8 +891,6 @@ function computeRecommendations(userId, limit = 6) {
     };
   }
 
-  // 2. COLLABORATIVE FILTERING EVALUATION
-  // Requires: target user has >= 2 interactions AND has overlapping interactions with other users
   let cfCandidates = [];
   let useCF = false;
 
@@ -1031,8 +965,6 @@ function computeRecommendations(userId, limit = 6) {
     }
   }
 
-  // 3. CONTENT-BASED FILTERING EVALUATION
-  // Requires: target user has >= 1 interaction with identifiable artist or genre features
   let cbCandidates = [];
   let useCB = false;
 
@@ -1096,7 +1028,6 @@ function computeRecommendations(userId, limit = 6) {
     }
   }
 
-  // 4. POPULARITY BASELINE (Ground truth catalog engagement without dummy numbers)
   const scoredBaseline = SONGS
     .filter(s => !userInteractedSongIds.has(s.id))
     .map(s => {
@@ -1107,7 +1038,6 @@ function computeRecommendations(userId, limit = 6) {
     })
     .sort((a, b) => b.score - a.score);
 
-  // 5. ASSEMBLE CANDIDATES & DETERMINE STRATEGY
   const chosenSongs = [];
   let activeStrategy = 'popularity_baseline';
   let isPersonalized = false;
@@ -1161,7 +1091,7 @@ function computeRecommendations(userId, limit = 6) {
       if (chosenSongs.length >= limit) break;
       tryAddCandidate(sId, 'collaborative_filtering', 'Recommended by listeners with overlapping taste');
     }
-    // Backfill with content-based if needed
+
     if (chosenSongs.length < limit && useCB) {
       for (const cand of cbCandidates) {
         if (chosenSongs.length >= limit) break;
@@ -1185,7 +1115,6 @@ function computeRecommendations(userId, limit = 6) {
       : 'Platform Baseline: Top trending catalog tracks across genres';
   }
 
-  // If needed, backfill with diverse Popularity Baseline
   if (chosenSongs.length < limit) {
     const genreBuckets = {};
     for (const item of scoredBaseline) {
@@ -1210,7 +1139,7 @@ function computeRecommendations(userId, limit = 6) {
       }
       pass++;
     }
-    // Fallback if still under limit
+
     for (const item of scoredBaseline) {
       if (chosenSongs.length >= limit) break;
       const g = GENRES.find(gen => gen.id === item.genreId);

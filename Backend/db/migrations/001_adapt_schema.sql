@@ -1,17 +1,8 @@
--- ============================================================
--- Migration 001: Adapt Database Schema
--- Non-destructive schema adaptation for BeatPulse / Music Analytics
--- Preserves existing primary keys, foreign keys, user accounts,
--- preferences, playlists, and ratings.
--- ============================================================
-
 USE music_analytics;
 
--- 1. USERS: Add source identifiers, namespaces, and demographic attributes
 SET @dbname = DATABASE();
 SET @tablename = "users";
 
--- source_namespace
 SET @preparedStatement = (SELECT IF(
   (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @dbname AND TABLE_NAME = @tablename AND COLUMN_NAME = "source_namespace") > 0,
   "SELECT 1",
@@ -21,7 +12,6 @@ PREPARE stmt FROM @preparedStatement;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- source_id
 SET @preparedStatement = (SELECT IF(
   (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @dbname AND TABLE_NAME = @tablename AND COLUMN_NAME = "source_id") > 0,
   "SELECT 1",
@@ -31,7 +21,6 @@ PREPARE stmt FROM @preparedStatement;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- gender
 SET @preparedStatement = (SELECT IF(
   (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @dbname AND TABLE_NAME = @tablename AND COLUMN_NAME = "gender") > 0,
   "SELECT 1",
@@ -41,7 +30,6 @@ PREPARE stmt FROM @preparedStatement;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- age
 SET @preparedStatement = (SELECT IF(
   (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @dbname AND TABLE_NAME = @tablename AND COLUMN_NAME = "age") > 0,
   "SELECT 1",
@@ -51,7 +39,6 @@ PREPARE stmt FROM @preparedStatement;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- country
 SET @preparedStatement = (SELECT IF(
   (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @dbname AND TABLE_NAME = @tablename AND COLUMN_NAME = "country") > 0,
   "SELECT 1",
@@ -61,8 +48,6 @@ PREPARE stmt FROM @preparedStatement;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-
--- 2. ARTISTS: Add source identifiers, namespaces, MBID, original credit, and genre
 SET @tablename = "artists";
 
 SET @preparedStatement = (SELECT IF(
@@ -110,8 +95,6 @@ PREPARE stmt FROM @preparedStatement;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-
--- 3. SONGS: Add source identifiers, namespaces, and track MBID
 SET @tablename = "songs";
 
 SET @preparedStatement = (SELECT IF(
@@ -141,8 +124,6 @@ PREPARE stmt FROM @preparedStatement;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-
--- 4. LISTENING_HISTORY: Add source tracking and deduplication
 SET @tablename = "listening_history";
 
 SET @preparedStatement = (SELECT IF(
@@ -163,8 +144,6 @@ PREPARE stmt FROM @preparedStatement;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-
--- 5. AGGREGATED LISTENING COUNTS: For datasets with pre-aggregated play counts
 CREATE TABLE IF NOT EXISTS aggregated_listening_counts (
   id               INT PRIMARY KEY AUTO_INCREMENT,
   user_id          INT DEFAULT NULL,
@@ -185,8 +164,6 @@ CREATE TABLE IF NOT EXISTS aggregated_listening_counts (
   INDEX idx_alc_song   (song_id)
 );
 
-
--- 6. STAGING TABLES: Transactional isolated buffers for bulk imports
 CREATE TABLE IF NOT EXISTS staging_users (
   source_id        VARCHAR(100) NOT NULL,
   source_namespace VARCHAR(50)  NOT NULL DEFAULT 'lastfm',
@@ -243,9 +220,6 @@ CREATE TABLE IF NOT EXISTS staging_aggregated_counts (
   INDEX idx_sac_lookup (source_namespace, user_source_id, artist_source_id, song_source_id)
 );
 
-
--- 7. APPROPRIATE INDEXES: For search, joins, filtering, and analytics
--- Safe creation of indexes if not already present
 DELIMITER //
 
 CREATE PROCEDURE sp_add_index_if_not_exists(
@@ -285,8 +259,6 @@ CALL sp_add_index_if_not_exists('listening_history', 'idx_lh_source', 'source_na
 
 DROP PROCEDURE IF EXISTS sp_add_index_if_not_exists;
 
-
--- 8. ANALYTIC VIEWS ADAPTATION: Incorporating both individual events and aggregated counts
 CREATE OR REPLACE VIEW top_songs_view AS
 SELECT
   s.id,

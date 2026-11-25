@@ -9,7 +9,6 @@ describe('API Responses Suite', () => {
   const testEmail = `test_${uniqueId}@example.com`;
   const testPassword = 'Password123!';
 
-  // ── Health Check ──
   describe('GET /api/health', () => {
     it('returns status ok with 200', async () => {
       const res = await request(app).get('/api/health');
@@ -18,7 +17,6 @@ describe('API Responses Suite', () => {
     });
   });
 
-  // ── Authentication ──
   describe('POST /api/auth/register & /login', () => {
     it('rejects registration with missing fields', async () => {
       const res = await request(app)
@@ -83,7 +81,6 @@ describe('API Responses Suite', () => {
     });
   });
 
-  // ── Songs Endpoints ──
   describe('GET /api/songs', () => {
     it('returns paginated song catalog with metadata and total count', async () => {
       const res = await request(app).get('/api/songs?page=1&limit=5');
@@ -157,7 +154,6 @@ describe('API Responses Suite', () => {
     });
   });
 
-  // ── Ratings Endpoints ──
   describe('POST & GET /api/ratings', () => {
     it('requires authentication to rate a song', async () => {
       const res = await request(app)
@@ -183,7 +179,6 @@ describe('API Responses Suite', () => {
       expect(res1.status).toBe(200);
       expect(res1.body.message).toMatch(/saved/i);
 
-      // Re-rate (upsert)
       const res2 = await request(app)
         .post('/api/ratings')
         .set('Authorization', `Bearer ${authToken}`)
@@ -214,7 +209,6 @@ describe('API Responses Suite', () => {
     });
   });
 
-  // ── Listen History Endpoints ──
   describe('POST & GET /api/listen', () => {
     it('requires authentication to log a listen event', async () => {
       const res = await request(app)
@@ -245,7 +239,6 @@ describe('API Responses Suite', () => {
     });
   });
 
-  // ── Playlists Endpoints ──
   describe('Playlists Endpoints', () => {
     let playlistId = null;
 

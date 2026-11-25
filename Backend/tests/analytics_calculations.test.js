@@ -8,13 +8,12 @@ describe('Analytics Calculations Suite', () => {
   const testEmail = `analyt_${uniqueId}@example.com`;
 
   beforeAll(async () => {
-    // Register active user for analytics testing
+
     const res = await request(app)
       .post('/api/auth/register')
       .send({ username: testUsername, email: testEmail, password: 'Password123!' });
     authToken = res.body.token;
 
-    // Log multiple listens across different songs
     await request(app)
       .post('/api/listen')
       .set('Authorization', `Bearer ${authToken}`)
@@ -30,7 +29,6 @@ describe('Analytics Calculations Suite', () => {
       .set('Authorization', `Bearer ${authToken}`)
       .send({ song_id: 2, duration_listened: 198 });
 
-    // Submit ratings
     await request(app)
       .post('/api/ratings')
       .set('Authorization', `Bearer ${authToken}`)
@@ -42,7 +40,6 @@ describe('Analytics Calculations Suite', () => {
       .send({ song_id: 2, rating: 4 });
   });
 
-  // ── Personal Analytics ──
   describe('GET /api/analytics/personal', () => {
     it('requires authentication', async () => {
       const res = await request(app).get('/api/analytics/personal');
@@ -58,12 +55,11 @@ describe('Analytics Calculations Suite', () => {
       const { overview } = res.body;
       expect(overview).toBeDefined();
 
-      // We logged 3 listens across 2 unique songs
       expect(overview.total_listens).toBeGreaterThanOrEqual(3);
       expect(overview.unique_songs).toBeGreaterThanOrEqual(2);
-      expect(overview.total_listen_seconds).toBeGreaterThanOrEqual(612); // 200 + 214 + 198
+      expect(overview.total_listen_seconds).toBeGreaterThanOrEqual(612);
       expect(overview.total_ratings).toBeGreaterThanOrEqual(2);
-      expect(overview.avg_given_rating).toBeCloseTo(4.5, 1); // (5+4)/2 = 4.5
+      expect(overview.avg_given_rating).toBeCloseTo(4.5, 1);
     });
 
     it('groups listens by hour of day and day of week correctly', async () => {
@@ -103,7 +99,7 @@ describe('Analytics Calculations Suite', () => {
 
       expect(Array.isArray(topSongs)).toBe(true);
       expect(topSongs.length).toBeGreaterThan(0);
-      // Song 1 had 2 listens, Song 2 had 1 listen
+
       expect(topSongs[0].id).toBe(1);
       expect(topSongs[0].listens).toBeGreaterThanOrEqual(2);
 
@@ -129,7 +125,6 @@ describe('Analytics Calculations Suite', () => {
     });
   });
 
-  // ── Global Analytics ──
   describe('GET /api/analytics/global', () => {
     it('returns system-wide analytics totals accurately partitioned by provenance tier', async () => {
       const res = await request(app).get('/api/analytics/global');
@@ -138,13 +133,11 @@ describe('Analytics Calculations Suite', () => {
       const { totals, provenanceTiers } = res.body;
       expect(totals).toBeDefined();
 
-      // Verification of counts
       expect(totals.total_users).toBeGreaterThan(0);
       expect(totals.total_songs).toBeGreaterThan(0);
       expect(totals.total_listens).toBeGreaterThan(0);
       expect(totals.live_app_listens).toBeGreaterThan(0);
 
-      // Provenance tier definitions
       expect(provenanceTiers).toBeDefined();
       expect(provenanceTiers.live_application.namespace).toBe('local');
       expect(provenanceTiers.historical_dataset.namespace).toBe('lastfm');

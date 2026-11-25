@@ -1,11 +1,3 @@
-/**
- * Automated Database Initializer for DBMS Capstone Project
- * Safely adapts the database schema, compiles views/triggers/procedures,
- * and idempotently provisions baseline demo records WITHOUT destroying
- * existing user accounts, ratings, playlists, preferences, or listening logs.
- *
- * Run: npm run init-db
- */
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
@@ -47,7 +39,7 @@ const ARTISTS = [
 ];
 
 const SONGS = [
-  // Pop (genre 1)
+
   { title: 'Starlight Boulevard',   artist: 1,  genre: 1,  album: 'Neon Dreams', duration: 214, date: '2024-03-15' },
   { title: 'Electric Hearts',       artist: 1,  genre: 1,  album: 'Neon Dreams', duration: 198, date: '2024-03-15' },
   { title: 'Dancing in the Glow',   artist: 1,  genre: 1,  album: 'Midnight Sun', duration: 227, date: '2023-08-20' },
@@ -55,7 +47,6 @@ const SONGS = [
   { title: 'Golden Hour',           artist: 11, genre: 1,  album: 'Horizons', duration: 189, date: '2024-01-10' },
   { title: 'Paper Moon',            artist: 11, genre: 1,  album: 'Horizons', duration: 241, date: '2024-01-10' },
 
-  // Rock (genre 2)
   { title: 'Highway Thunder',       artist: 2,  genre: 2,  album: 'Rebel Heart', duration: 265, date: '2023-11-05' },
   { title: 'Burning Bridges',       artist: 2,  genre: 2,  album: 'Rebel Heart', duration: 298, date: '2023-11-05' },
   { title: 'Iron Will',             artist: 2,  genre: 2,  album: 'Steel & Stone', duration: 312, date: '2022-06-18' },
@@ -63,7 +54,6 @@ const SONGS = [
   { title: 'Echoes of Tomorrow',    artist: 12, genre: 2,  album: 'Tempest', duration: 278, date: '2024-02-28' },
   { title: 'Storm Chaser',          artist: 12, genre: 2,  album: 'Tempest', duration: 255, date: '2024-02-28' },
 
-  // Hip-Hop (genre 3)
   { title: 'Crown & Glory',         artist: 5,  genre: 3,  album: 'The Blueprint', duration: 232, date: '2024-04-01' },
   { title: 'Street Wisdom',         artist: 5,  genre: 3,  album: 'The Blueprint', duration: 201, date: '2024-04-01' },
   { title: 'Concrete Jungle',       artist: 5,  genre: 3,  album: 'Urban Tales', duration: 218, date: '2023-05-12' },
@@ -71,7 +61,6 @@ const SONGS = [
   { title: 'Midnight Hustle',       artist: 15, genre: 3,  album: 'Throne Room', duration: 210, date: '2024-06-15' },
   { title: 'Legacy',                artist: 15, genre: 3,  album: 'Throne Room', duration: 248, date: '2024-06-15' },
 
-  // R&B (genre 4)
   { title: 'Velvet Sky',            artist: 4,  genre: 4,  album: 'Silk & Soul', duration: 256, date: '2024-02-14' },
   { title: 'Slow Burn',             artist: 4,  genre: 4,  album: 'Silk & Soul', duration: 234, date: '2024-02-14' },
   { title: 'Moonlit Serenade',      artist: 4,  genre: 4,  album: 'After Hours', duration: 279, date: '2023-09-01' },
@@ -79,7 +68,6 @@ const SONGS = [
   { title: 'Tender Love',           artist: 14, genre: 4,  album: 'Dusk Till Dawn', duration: 245, date: '2024-05-20' },
   { title: 'Butterflies',           artist: 14, genre: 4,  album: 'Dusk Till Dawn', duration: 198, date: '2024-05-20' },
 
-  // Electronic (genre 5)
   { title: 'Neon Nights',           artist: 3,  genre: 5,  album: 'Digital Dreams', duration: 342, date: '2024-01-20' },
   { title: 'Pulse Wave',            artist: 3,  genre: 5,  album: 'Digital Dreams', duration: 385, date: '2024-01-20' },
   { title: 'Cyber Dawn',            artist: 3,  genre: 5,  album: 'Binary Sunset', duration: 298, date: '2023-07-07' },
@@ -87,7 +75,6 @@ const SONGS = [
   { title: 'Digital Love',          artist: 13, genre: 5,  album: 'Synthwave City', duration: 276, date: '2024-03-30' },
   { title: 'Future Shock',          artist: 13, genre: 5,  album: 'Synthwave City', duration: 334, date: '2024-03-30' },
 
-  // Jazz (genre 6)
   { title: 'Blue Monday',           artist: 6,  genre: 6,  album: 'Late Night Sessions', duration: 367, date: '2023-10-15' },
   { title: 'Satin Smooth',          artist: 6,  genre: 6,  album: 'Late Night Sessions', duration: 289, date: '2023-10-15' },
   { title: 'Impromptu No. 5',       artist: 6,  genre: 6,  album: 'Free Flow', duration: 423, date: '2022-12-01' },
@@ -95,7 +82,6 @@ const SONGS = [
   { title: 'Cool Breeze',           artist: 16, genre: 6,  album: 'City Blues', duration: 267, date: '2024-04-18' },
   { title: 'Swing Time',            artist: 16, genre: 6,  album: 'City Blues', duration: 245, date: '2024-04-18' },
 
-  // Classical (genre 7)
   { title: 'Sonata in D Minor',     artist: 7,  genre: 7,  album: 'Nocturnes', duration: 480, date: '2023-03-25' },
   { title: 'Prelude to Dawn',       artist: 7,  genre: 7,  album: 'Nocturnes', duration: 356, date: '2023-03-25' },
   { title: 'Elegy for Strings',     artist: 7,  genre: 7,  album: 'Reflections', duration: 512, date: '2022-09-10' },
@@ -103,7 +89,6 @@ const SONGS = [
   { title: 'Whispers of Vienna',    artist: 17, genre: 7,  album: 'Four Seasons', duration: 398, date: '2024-07-01' },
   { title: 'Midnight Waltz',        artist: 17, genre: 7,  album: 'Four Seasons', duration: 367, date: '2024-07-01' },
 
-  // Country (genre 8)
   { title: 'Dirt Road Anthem',      artist: 8,  genre: 8,  album: 'Backroads', duration: 223, date: '2023-12-10' },
   { title: 'Sunset Porch',          artist: 8,  genre: 8,  album: 'Backroads', duration: 198, date: '2023-12-10' },
   { title: 'Old Pickup Truck',      artist: 8,  genre: 8,  album: 'Simple Life', duration: 245, date: '2023-04-14' },
@@ -111,7 +96,6 @@ const SONGS = [
   { title: 'Campfire Stories',      artist: 18, genre: 8,  album: 'Wild Petals', duration: 234, date: '2024-05-05' },
   { title: 'Morning Dew',           artist: 18, genre: 8,  album: 'Wild Petals', duration: 189, date: '2024-05-05' },
 
-  // Indie (genre 9)
   { title: 'Faded Polaroids',       artist: 9,  genre: 9,  album: 'Lo-Fi Diaries', duration: 234, date: '2024-02-10' },
   { title: 'Rooftop View',          artist: 9,  genre: 9,  album: 'Lo-Fi Diaries', duration: 198, date: '2024-02-10' },
   { title: 'Analog Days',           artist: 9,  genre: 9,  album: 'Warm Tones', duration: 256, date: '2023-06-22' },
@@ -119,7 +103,6 @@ const SONGS = [
   { title: 'Wishing Well',          artist: 19, genre: 9,  album: 'Postcards', duration: 218, date: '2024-08-12' },
   { title: 'Paper Airplanes',       artist: 19, genre: 9,  album: 'Postcards', duration: 187, date: '2024-08-12' },
 
-  // Metal (genre 10)
   { title: 'Wrath Unchained',       artist: 10, genre: 10, album: 'Forged in Fire', duration: 345, date: '2023-10-31' },
   { title: 'Crimson Fury',          artist: 10, genre: 10, album: 'Forged in Fire', duration: 312, date: '2023-10-31' },
   { title: 'Titan\'s Fall',         artist: 10, genre: 10, album: 'Apocalypse', duration: 378, date: '2022-08-15' },
@@ -156,19 +139,17 @@ async function initializeDatabase() {
   }
 
   try {
-    // 1. Create database
+
     const dbName = process.env.DB_NAME || 'music_analytics';
     await conn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
     await conn.query(`USE \`${dbName}\``);
     console.log(`✓ Database \`${dbName}\` ready`);
 
-    // 2. Drop existing triggers & procedures to safely recompile
     await conn.query(`DROP TRIGGER IF EXISTS trg_after_listen`).catch(() => {});
     await conn.query(`DROP TRIGGER IF EXISTS trg_after_rating`).catch(() => {});
     await conn.query(`DROP PROCEDURE IF EXISTS sp_get_recommendations`).catch(() => {});
     await conn.query(`DROP PROCEDURE IF EXISTS sp_update_preferences`).catch(() => {});
 
-    // 3. Create core relational tables in strict FK order
     await conn.query(`
       CREATE TABLE IF NOT EXISTS users (
         id               INT PRIMARY KEY AUTO_INCREMENT,
@@ -339,7 +320,6 @@ async function initializeDatabase() {
       )
     `);
 
-    // Staging tables
     await conn.query(`
       CREATE TABLE IF NOT EXISTS staging_users (
         source_id        VARCHAR(100) NOT NULL,
@@ -407,7 +387,6 @@ async function initializeDatabase() {
     `);
     console.log('✓ 10 Application tables & 5 Staging buffers verified');
 
-    // 4. Create analytical views
     await conn.query(`
       CREATE OR REPLACE VIEW top_songs_view AS
       SELECT
@@ -504,7 +483,6 @@ async function initializeDatabase() {
     `);
     console.log('✓ 3 Analytical SQL views compiled with aggregated counts support');
 
-    // 5. Stored Procedures — Progressive Recommendation Hierarchy (Collaborative, Content-Based, Popularity Baseline)
     await conn.query(`
       CREATE PROCEDURE sp_get_recommendations(
         IN p_user_id INT,
@@ -661,7 +639,6 @@ async function initializeDatabase() {
     `);
     console.log('✓ Stored procedures compiled (sp_get_recommendations, sp_update_preferences)');
 
-    // 6. Triggers (Optimized: only updates real-time preferences for active local app users)
     await conn.query(`
       CREATE TRIGGER trg_after_listen
       AFTER INSERT ON listening_history
@@ -695,7 +672,6 @@ async function initializeDatabase() {
     `);
     console.log('✓ Database triggers compiled (trg_after_listen, trg_after_rating)');
 
-    // 7. Non-destructive baseline seeding (preserves existing users, playlists, history)
     for (const g of GENRES) {
       await conn.query(
         'INSERT INTO genres (name, description) VALUES (?, ?) ON DUPLICATE KEY UPDATE description = VALUES(description)',
@@ -712,7 +688,6 @@ async function initializeDatabase() {
     }
     console.log(`✓ Ensured baseline local artists`);
 
-    // Fetch artist id mapping
     const [existingArtists] = await conn.query('SELECT id, name FROM artists');
     const artistMap = {};
     for (const row of existingArtists) {
@@ -730,7 +705,6 @@ async function initializeDatabase() {
     }
     console.log(`✓ Ensured baseline local songs`);
 
-    // Seed demo users without overwriting existing registered user accounts
     for (const u of USERS) {
       const hash = await bcrypt.hash(u.password, 10);
       await conn.query(

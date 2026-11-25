@@ -1,26 +1,11 @@
-/**
- * Database Connection — MySQL Primary Data Source
- *
- * In normal (dev/prod) mode:
- *   - MySQL is the ONLY data source.
- *   - If MySQL is unavailable the query fails loudly with a clear error.
- *   - No silent fallback, no mock data, no guessing.
- *
- * In explicit test/mock mode (NODE_ENV=test OR MOCK_MODE=true):
- *   - Falls back to the in-memory mock store so Jest tests run offline.
- *
- * Run `npm run init-db` once before starting the server to create the schema.
- */
 const mysql = require('mysql2/promise');
 const { executeMockQuery } = require('./mockStore');
 require('dotenv').config();
 
-// ── Determine runtime mode ───────────────────────────────────────────────────
 const MOCK_MODE =
   process.env.MOCK_MODE === 'true' ||
   process.env.NODE_ENV === 'test';
 
-// ── Build MySQL pool (only when NOT in mock mode) ───────────────────────────
 let mysqlPool = null;
 
 if (!MOCK_MODE) {
@@ -36,7 +21,6 @@ if (!MOCK_MODE) {
     connectTimeout:   10000,
   });
 
-  // Eagerly validate the connection so startup fails fast if credentials are wrong.
   mysqlPool.getConnection()
     .then(conn => {
       console.log(
@@ -57,22 +41,16 @@ if (!MOCK_MODE) {
   console.log(`⚡ Running in ${process.env.NODE_ENV === 'test' ? 'TEST' : 'MOCK'} mode — using in-memory mock store.`);
 }
 
-// ── Unified pool API ─────────────────────────────────────────────────────────
 const pool = {
-  /**
-   * Execute a SQL query.
-   * In normal mode: hits MySQL, throws on any error (no fallback).
-   * In mock/test mode: hits the in-memory mock store.
-   */
+
   async query(sql, params = []) {
     if (MOCK_MODE || !mysqlPool) {
       return executeMockQuery(sql, params);
     }
-    // Let MySQL errors propagate — callers/routes handle them.
+
     return mysqlPool.query(sql, params);
   },
 
-  /** Expose isMock flag so routes/tests can inspect the active mode. */
   isMock: MOCK_MODE,
 };
 
