@@ -193,7 +193,7 @@ export default function Landing() {
           <div className="grid-cols-3">
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text)' }}>john_doe</span>
+                <span style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text)' }}>Ajay Kumar</span>
                 <span className="song-meta-pill">Pop &amp; Rock</span>
               </div>
               <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
@@ -209,7 +209,7 @@ export default function Landing() {
 
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text)' }}>jane_smith</span>
+                <span style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text)' }}>Ravi Raj</span>
                 <span className="song-meta-pill">Jazz &amp; Classical</span>
               </div>
               <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
