@@ -39,13 +39,6 @@ export default function Auth({ initialMode = 'login' }) {
     }
   };
 
-  const fillDemo = (demoEmail, demoPass) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setIsLogin(true);
-    setErrorMsg('');
-    setSuccessMsg('');
-  };
 
   return (
     <div className="page-container" id="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 180px)' }}>
@@ -153,43 +146,7 @@ export default function Auth({ initialMode = 'login' }) {
           )}
         </div>
 
-        {/* Demo Accounts Quick-Select */}
-        <div style={{ marginTop: '28px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>
-              Quick test accounts
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              style={{ justifyContent: 'space-between', width: '100%', padding: '8px 12px' }}
-              onClick={() => fillDemo('john@example.com', 'password123')}
-            >
-              <span style={{ fontWeight: '600' }}>john_doe</span>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Pop &amp; Rock (36 plays)</span>
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              style={{ justifyContent: 'space-between', width: '100%', padding: '8px 12px' }}
-              onClick={() => fillDemo('jane@example.com', 'password123')}
-            >
-              <span style={{ fontWeight: '600' }}>jane_smith</span>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Jazz &amp; Classical (43 plays)</span>
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              style={{ justifyContent: 'space-between', width: '100%', padding: '8px 12px' }}
-              onClick={() => fillDemo('krish@gmail.com', 'password123')}
-            >
-              <span style={{ fontWeight: '600' }}>Krish Raj</span>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>krish@gmail.com</span>
-            </button>
-          </div>
-        </div>
+
       </div>
     </div>
   );
