@@ -33,7 +33,7 @@ export default function FAQPage() {
         <ExpandableFAQ />
       </div>
 
-      {/* Relational Schema Breakdown */}
+      { }
       <div className="card" style={{ marginBottom: '32px' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '12px' }}>
           Normalized Database Schema (3NF)
@@ -64,7 +64,7 @@ export default function FAQPage() {
         </div>
       </div>
 
-      {/* 14. UTM Tracking Information Box */}
+      { }
       <div className="card" style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>

@@ -15,7 +15,6 @@ export default function Playlists() {
   const [loading, setLoading] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  // Modals state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
@@ -164,7 +163,7 @@ export default function Playlists() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '24px' }}>
-        {/* Playlists Left Panel */}
+        { }
         <div className="card" style={{ padding: '16px', height: 'fit-content' }}>
           <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '12px' }}>
             Your Collections ({playlists.length})
@@ -207,7 +206,7 @@ export default function Playlists() {
           )}
         </div>
 
-        {/* Playlist Right Detail Panel */}
+        { }
         <div>
           {loadingDetail ? (
             <LoadingSpinner message="Loading playlist tracks..." />
@@ -246,7 +245,7 @@ export default function Playlists() {
                 </div>
               </div>
 
-              {/* Tracks List */}
+              { }
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
                 {!selectedPlaylist.songs || selectedPlaylist.songs.length === 0 ? (
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '16px 0' }}>
@@ -281,7 +280,7 @@ export default function Playlists() {
         </div>
       </div>
 
-      {/* Create Modal */}
+      { }
       {showCreateModal && (
         <div className="modal-backdrop" onClick={() => setShowCreateModal(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -337,7 +336,7 @@ export default function Playlists() {
         </div>
       )}
 
-      {/* Edit Modal */}
+      { }
       {showEditModal && (
         <div className="modal-backdrop" onClick={() => setShowEditModal(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -391,7 +390,7 @@ export default function Playlists() {
         </div>
       )}
 
-      {/* 17. Confirm Delete Modal */}
+      { }
       <ConfirmModal
         isOpen={deleteModal.open}
         title="Delete Playlist"

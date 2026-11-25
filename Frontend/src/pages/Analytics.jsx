@@ -58,7 +58,6 @@ export default function Analytics() {
     );
   }
 
-  // Format hourly distribution to 24-hour labels
   const hourlyData = Array.from({ length: 24 }, (_, i) => {
     const match = personal?.hourly?.find((h) => h.hour === i);
     return {
@@ -106,7 +105,7 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Analytics Navigation Tabs */}
+      { }
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
         <button
           className={`btn ${activeTab === 'personal' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
@@ -148,7 +147,7 @@ export default function Analytics() {
             </span>
           </div>
 
-          {/* KPI Metrics */}
+          { }
           <div className="grid-cols-4" style={{ marginBottom: '24px' }}>
             <div className="stat-box">
               <div className="stat-box-value">{personal?.overview?.total_listens || 0}</div>
@@ -172,7 +171,7 @@ export default function Analytics() {
             </div>
           </div>
 
-          {/* Charts Row */}
+          { }
           <div className="grid-cols-2" style={{ marginBottom: '24px' }}>
             <div className="card">
               <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '16px' }}>
@@ -209,7 +208,7 @@ export default function Analytics() {
             </div>
           </div>
 
-          {/* Timeline */}
+          { }
           {personal?.trend?.length > 0 && (
             <div className="card" style={{ marginBottom: '24px' }}>
               <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '16px' }}>
@@ -234,7 +233,7 @@ export default function Analytics() {
             </div>
           )}
 
-          {/* Breakdown Tables */}
+          { }
           <div className="grid-cols-3">
             <div className="card">
               <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '14px' }}>
@@ -346,7 +345,7 @@ export default function Analytics() {
           </div>
         </div>
       ) : (
-        /* Global Platform Trends */
+
         <div>
           <div
             style={{

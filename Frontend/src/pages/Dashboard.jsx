@@ -70,7 +70,7 @@ export default function Dashboard() {
 
   return (
     <div className="page-container" id="main-content">
-      {/* ── Page Header ─────────────────────────────────────────── */}
+      { }
       <div className="page-header">
         <div>
           <h1 className="page-title">Welcome back, {user?.username}</h1>
@@ -90,7 +90,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Listening Overview Metrics ───────────────────────────── */}
+      { }
       <div className="grid-cols-4" style={{ marginBottom: '36px' }}>
         <div className="stat-box">
           <div className="stat-box-value">{stats?.total_listens || 0}</div>
@@ -119,7 +119,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Recommendations Section ──────────────────────────────── */}
+      { }
       <div style={{ marginBottom: '40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
           <div>
@@ -155,9 +155,9 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* ── Recent Activity & Playlists Row ───────────────────────── */}
+      { }
       <div className="grid-cols-2">
-        {/* Recently Played */}
+        { }
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text)' }}>
@@ -203,7 +203,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Saved Playlists */}
+        { }
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text)' }}>

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 
-// ── 14. UTM Tracking Hook ────────────────────────────────────
 export function useUtmTracking() {
   const [utmData, setUtmData] = useState({});
 
@@ -28,14 +27,13 @@ export function useUtmTracking() {
         if (saved) setUtmData(JSON.parse(saved));
       }
     } catch {
-      // fallback
+
     }
   }, []);
 
   return utmData;
 }
 
-// ── 1. Dark Mode Toggle ──────────────────────────────────────
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
   return (
@@ -67,7 +65,6 @@ export function ThemeToggle() {
   );
 }
 
-// ── 8. Scroll Progress Bar ───────────────────────────────────
 export function ScrollProgress() {
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -90,7 +87,6 @@ export function ScrollProgress() {
   );
 }
 
-// ── 4. Back to Top Button ────────────────────────────────────
 export function BackToTop() {
   const [visible, setVisible] = useState(false);
 
@@ -121,7 +117,6 @@ export function BackToTop() {
   );
 }
 
-// ── 2. Simple Cookie Banner ──────────────────────────────────
 export function CookieBanner() {
   const [show, setShow] = useState(() => {
     return !localStorage.getItem('beatpulse_cookie_consent');
@@ -148,7 +143,6 @@ export function CookieBanner() {
   );
 }
 
-// ── 9. Copy Button ───────────────────────────────────────────
 export function CopyButton({ text, label = 'Copy' }) {
   const [copied, setCopied] = useState(false);
 
@@ -158,7 +152,7 @@ export function CopyButton({ text, label = 'Copy' }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback
+
     }
   };
 
@@ -178,7 +172,6 @@ export function CopyButton({ text, label = 'Copy' }) {
   );
 }
 
-// ── 13. Password Visibility Toggle Input ──────────────────────
 export function PasswordInput({ id, value, onChange, placeholder = 'Password', required = false }) {
   const [visible, setVisible] = useState(false);
 
@@ -216,7 +209,6 @@ export function PasswordInput({ id, value, onChange, placeholder = 'Password', r
   );
 }
 
-// ── 17. Confirmation Modal ───────────────────────────────────
 export function ConfirmModal({ isOpen, title, message, confirmText = 'Confirm', onConfirm, onCancel }) {
   if (!isOpen) return null;
 
@@ -245,7 +237,6 @@ export function ConfirmModal({ isOpen, title, message, confirmText = 'Confirm', 
   );
 }
 
-// ── 18. Last Updated Date Widget ─────────────────────────────
 export function LastUpdatedDate() {
   const formatted = new Date().toLocaleDateString('en-US', {
     month: 'short',
@@ -260,7 +251,6 @@ export function LastUpdatedDate() {
   );
 }
 
-// ── 19. Expandable FAQ Component ─────────────────────────────
 export function ExpandableFAQ() {
   const [openIndex, setOpenIndex] = useState(0);
 
@@ -305,7 +295,6 @@ export function ExpandableFAQ() {
   );
 }
 
-// ── 20. Floating Contact Button & Drawer ─────────────────────
 export function FloatingContact() {
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -365,7 +354,6 @@ export function FloatingContact() {
   );
 }
 
-// ── 6. Loading Spinner ───────────────────────────────────────
 export function LoadingSpinner({ message = 'Loading relational records...' }) {
   return (
     <div className="loading-spinner-wrapper" role="status">

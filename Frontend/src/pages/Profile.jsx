@@ -58,7 +58,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* User Information Card */}
+      { }
       <div className="card" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
           <div
@@ -90,7 +90,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Cumulative Stats */}
+      { }
       <div className="grid-cols-4" style={{ marginBottom: '32px' }}>
         <div className="stat-box">
           <div className="stat-box-value">{stats?.total_listens || 0}</div>
@@ -112,7 +112,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Rated Songs */}
+      { }
       <div className="card" style={{ marginBottom: '32px' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '16px' }}>
           Your Rated Songs ({ratings.length})

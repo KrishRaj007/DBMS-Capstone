@@ -150,7 +150,7 @@ export default function SongDetail() {
           </div>
         </div>
 
-        {/* Track Metadata Grid */}
+        { }
         <div className="grid-cols-4" style={{ marginTop: '28px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Genre</div>
@@ -173,7 +173,7 @@ export default function SongDetail() {
         </div>
       </div>
 
-      {/* Rating & Playlist Interactive Deck */}
+      { }
       <div className="grid-cols-2">
         <div className="card">
           <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '12px' }}>

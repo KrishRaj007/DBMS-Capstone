@@ -13,7 +13,6 @@ export default function Library() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
 
-  // Filters from query params
   const searchQuery = searchParams.get('search') || '';
   const selectedGenre = searchParams.get('genre') || '';
   const selectedArtist = searchParams.get('artist') || '';
@@ -21,10 +20,8 @@ export default function Library() {
   const currentPage = parseInt(searchParams.get('page') || '1');
   const limit = 15;
 
-  // Artist Detail Modal state
   const [artistModal, setArtistModal] = useState({ open: false, data: null, loading: false });
 
-  // Load genres and artists for filters
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
@@ -43,7 +40,6 @@ export default function Library() {
     fetchMetadata();
   }, []);
 
-  // Fetch songs when filters or page changes
   useEffect(() => {
     const fetchSongs = async () => {
       try {
@@ -105,7 +101,7 @@ export default function Library() {
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
+      { }
       <div className="card" style={{ marginBottom: '24px', padding: '16px' }}>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ flex: '2', minWidth: '220px' }}>
@@ -188,7 +184,7 @@ export default function Library() {
         </div>
       </div>
 
-      {/* Song List */}
+      { }
       {loading ? (
         <LoadingSpinner message="Searching indexed catalog with MySQL B-Tree indexes..." />
       ) : songs.length === 0 ? (
@@ -212,7 +208,7 @@ export default function Library() {
         </div>
       )}
 
-      {/* Pagination Controls */}
+      { }
       {totalPages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '32px' }}>
           <button
@@ -245,7 +241,7 @@ export default function Library() {
         </div>
       )}
 
-      {/* Artist Detail Modal */}
+      { }
       {artistModal.open && (
         <div
           className="modal-backdrop"

@@ -74,7 +74,7 @@ export default function SongItem({ song, onPlaySuccess, onRateSuccess, playlists
   return (
     <div className={`song-row ${isPlaying ? 'song-row-active' : ''}`} id={`song-item-${song.id}`}>
       <div className="song-left">
-        {/* Play Button */}
+        { }
         <button
           onClick={handlePlay}
           className={`btn-play-trigger ${isPlaying ? 'is-playing' : ''}`}
@@ -95,14 +95,14 @@ export default function SongItem({ song, onPlaySuccess, onRateSuccess, playlists
           )}
         </button>
 
-        {/* Art Badge */}
+        { }
         <div className="song-art-badge" aria-hidden="true">
           <span className="song-art-genre-label">
             {song.genre_name ? song.genre_name.slice(0, 3).toUpperCase() : 'REC'}
           </span>
         </div>
 
-        {/* Song Info */}
+        { }
         <div className="song-details">
           <Link to={`/songs/${song.id}`} className="song-title-text" title={song.title}>
             {song.title}
@@ -126,7 +126,7 @@ export default function SongItem({ song, onPlaySuccess, onRateSuccess, playlists
           {formatDuration(song.duration_seconds)}
         </span>
 
-        {/* Star Rating */}
+        { }
         <div className="star-rating" role="group" aria-label={`Rate ${song.title}`}>
           {[1, 2, 3, 4, 5].map((star) => (
             <button
@@ -145,7 +145,7 @@ export default function SongItem({ song, onPlaySuccess, onRateSuccess, playlists
           ))}
         </div>
 
-        {/* Add to Playlist */}
+        { }
         {playlists.length > 0 && (
           <div style={{ position: 'relative' }}>
             <button

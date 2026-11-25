@@ -20,13 +20,13 @@ export default function Landing() {
       await login(email, 'password123');
       navigate('/dashboard');
     } catch {
-      // handled
+
     }
   };
 
   return (
     <div className="page-container" id="main-content" style={{ paddingTop: '24px' }}>
-      {/* ── Modern Hero Section ───────────────────────────────────── */}
+      { }
       <section style={{ maxWidth: '860px', marginBottom: '56px' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px', borderRadius: 'var(--radius)', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', fontSize: '0.8rem', color: 'var(--primary)', fontWeight: '600', marginBottom: '18px' }}>
           <span>●</span>
@@ -62,7 +62,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Live Dynamic Metrics Strip ─────────────────────────────── */}
+      { }
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '16px', marginBottom: '64px', borderTop: '1px solid var(--border)', paddingTop: '32px' }}>
         <div className="card" style={{ padding: '20px' }}>
           <div style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--text)', letterSpacing: '-0.02em' }}>
@@ -101,7 +101,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Feature Highlight & Audio Player Showcase ─────────────── */}
+      { }
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px', marginBottom: '64px', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text)', marginBottom: '14px', letterSpacing: '-0.02em' }}>
@@ -134,7 +134,7 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Live Audio Telemetry Card */}
+        { }
         <div className="card" style={{ padding: '28px', backgroundColor: 'var(--surface)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -180,7 +180,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Evaluator Persona Deck ───────────────────────────────── */}
+      { }
       {!user && (
         <section style={{ marginBottom: '64px' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>
@@ -242,7 +242,7 @@ export default function Landing() {
         </section>
       )}
 
-      {/* ── 19. Frequently Asked Questions ───────────────────────── */}
+      { }
       <section style={{ marginBottom: '40px' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>
           Frequently Asked Questions

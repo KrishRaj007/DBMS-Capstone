@@ -20,7 +20,6 @@ import Analytics from './pages/Analytics';
 import FAQPage from './pages/FAQPage';
 import Profile from './pages/Profile';
 
-// Protected Route wrapper
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return null;
@@ -29,20 +28,20 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
-  // 14. Initialize UTM tracking across application
+
   useUtmTracking();
 
   return (
     <div className="app-layout">
-      {/* 12. Skip to Content Accessibility Link */}
+      { }
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
 
-      {/* 8. Scroll Progress Bar */}
+      { }
       <ScrollProgress />
 
-      {/* 11. Sticky Header with Site Search, Dark Mode & Mobile Menu */}
+      { }
       <Header />
 
       <main style={{ flex: 1 }}>
@@ -51,7 +50,7 @@ export default function App() {
           <Route path="/login" element={<Auth initialMode="login" />} />
           <Route path="/register" element={<Auth initialMode="register" />} />
 
-          {/* Authenticated routes */}
+          { }
           <Route
             path="/dashboard"
             element={
@@ -102,21 +101,21 @@ export default function App() {
             }
           />
 
-          {/* Fallback */}
+          { }
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 
-      {/* 18. Footer with Last Updated Date */}
+      { }
       <Footer />
 
-      {/* 2. Simple Cookie Consent Banner */}
+      { }
       <CookieBanner />
 
-      {/* 4. Back to Top Button */}
+      { }
       <BackToTop />
 
-      {/* 20. Floating Contact Button */}
+      { }
       <FloatingContact />
     </div>
   );
