@@ -3,7 +3,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db/connection');
 
-// POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -14,7 +13,6 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
-    // Check existing
     const [existing] = await pool.query(
       'SELECT id FROM users WHERE email = ? OR username = ?',
       [email, username]
@@ -45,7 +43,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;

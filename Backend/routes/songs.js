@@ -1,7 +1,6 @@
 const router = require('express').Router();
 const pool = require('../db/connection');
 
-// GET /api/songs?search=&genre=&artist=&sort=&page=&limit=
 router.get('/', async (req, res) => {
   try {
     const { search, genre, artist, sort = 'title', page = 1, limit = 20 } = req.query;
@@ -25,7 +24,6 @@ router.get('/', async (req, res) => {
 
     const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
 
-    // Dynamic sort ordering
     let orderByClause = 'ORDER BY s.title ASC';
     if (sort === 'popular') {
       orderByClause = 'ORDER BY play_count DESC, avg_rating DESC, s.title ASC';
@@ -78,7 +76,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/songs/:id
 router.get('/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -103,7 +100,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// GET /api/songs/genres/list
 router.get('/genres/list', async (_req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM genre_popularity_view');
@@ -114,7 +110,6 @@ router.get('/genres/list', async (_req, res) => {
   }
 });
 
-// GET /api/songs/artists/list?search=&limit=
 router.get('/artists/list', async (req, res) => {
   try {
     const { search, limit = 100 } = req.query;
@@ -143,7 +138,6 @@ router.get('/artists/list', async (req, res) => {
   }
 });
 
-// GET /api/songs/artists/:id — Full artist profile with catalog tracks & stats
 router.get('/artists/:id', async (req, res) => {
   try {
     const artistId = req.params.id;
@@ -168,7 +162,6 @@ router.get('/artists/:id', async (req, res) => {
       return res.status(404).json({ error: 'Artist not found' });
     }
 
-    // Top tracks by this artist
     const [topTracks] = await pool.query(
       `SELECT s.id, s.title, s.album, s.duration_seconds, s.release_date,
               g.name AS genre_name,

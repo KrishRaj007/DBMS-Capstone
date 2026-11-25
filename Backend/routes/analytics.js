@@ -2,16 +2,14 @@ const router = require('express').Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 
-// GET /api/analytics/personal
 router.get('/personal', auth, async (req, res) => {
   try {
-    // Overview stats from user_analytics_view
+
     const [[overview]] = await pool.query(
       `SELECT * FROM user_analytics_view WHERE user_id = ?`,
       [req.user.id]
     );
 
-    // Top genres by listen count with real user rating average
     const [topGenres] = await pool.query(
       `SELECT g.name, COUNT(lh.id) AS listens, COALESCE(AVG(r.rating), 0) AS avg_rating
        FROM listening_history lh
@@ -25,7 +23,6 @@ router.get('/personal', auth, async (req, res) => {
       [req.user.id, req.user.id]
     );
 
-    // Top artists by listen count
     const [topArtists] = await pool.query(
       `SELECT a.name, COUNT(lh.id) AS listens
        FROM listening_history lh
@@ -38,7 +35,6 @@ router.get('/personal', auth, async (req, res) => {
       [req.user.id]
     );
 
-    // Top songs by listen count
     const [topSongs] = await pool.query(
       `SELECT s.id, s.title, a.name AS artist_name, COUNT(lh.id) AS listens
        FROM listening_history lh
@@ -51,7 +47,6 @@ router.get('/personal', auth, async (req, res) => {
       [req.user.id]
     );
 
-    // Listening heatmap — by hour of day
     const [hourly] = await pool.query(
       `SELECT HOUR(listened_at) AS hour, COUNT(*) AS listens
        FROM listening_history
@@ -61,7 +56,6 @@ router.get('/personal', auth, async (req, res) => {
       [req.user.id]
     );
 
-    // Listening heatmap — by day of week (0=Monday … 6=Sunday)
     const [daily] = await pool.query(
       `SELECT DAYOFWEEK(listened_at) AS day, COUNT(*) AS listens
        FROM listening_history
@@ -71,7 +65,6 @@ router.get('/personal', auth, async (req, res) => {
       [req.user.id]
     );
 
-    // Listening trend — daily activity
     const [trend] = await pool.query(
       `SELECT DATE(listened_at) AS date, COUNT(*) AS listens,
               SUM(duration_listened) AS total_duration
@@ -109,20 +102,17 @@ router.get('/personal', auth, async (req, res) => {
   }
 });
 
-// GET /api/analytics/global
 router.get('/global', async (_req, res) => {
   try {
-    // Most played songs (combined view of granular history + aggregated dataset counts)
+
     const [mostPlayed] = await pool.query(
       `SELECT * FROM top_songs_view LIMIT 10`
     );
 
-    // Genre popularity
     const [genrePopularity] = await pool.query(
       `SELECT * FROM genre_popularity_view`
     );
 
-    // Top rated songs (from verified ratings submitted by active application users)
     const [topRated] = await pool.query(
       `SELECT s.id, s.title, a.name AS artist_name, g.name AS genre_name,
               AVG(r.rating) AS avg_rating, COUNT(r.id) AS rating_count
@@ -136,7 +126,6 @@ router.get('/global', async (_req, res) => {
        LIMIT 10`
     );
 
-    // Active users with provenance namespace badges
     const [activeUsers] = await pool.query(
       `SELECT u.id, u.username, u.source_namespace, COUNT(lh.id) AS total_listens
        FROM users u
@@ -146,7 +135,6 @@ router.get('/global', async (_req, res) => {
        LIMIT 10`
     );
 
-    // Totals accurately separated by data source and aggregation level
     const [[totals]] = await pool.query(
       `SELECT
          (SELECT COUNT(*) FROM users) AS total_users,

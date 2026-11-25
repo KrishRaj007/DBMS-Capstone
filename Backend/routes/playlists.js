@@ -2,7 +2,6 @@ const router = require('express').Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 
-// GET /api/playlists — user's playlists
 router.get('/', auth, async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -21,7 +20,6 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// POST /api/playlists
 router.post('/', auth, async (req, res) => {
   try {
     const { name, description, is_public = true } = req.body;
@@ -38,7 +36,6 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// GET /api/playlists/:id
 router.get('/:id', auth, async (req, res) => {
   try {
     const [plRows] = await pool.query(
@@ -67,7 +64,6 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
-// PUT /api/playlists/:id
 router.put('/:id', auth, async (req, res) => {
   try {
     const { name, description, is_public } = req.body;
@@ -88,7 +84,6 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// DELETE /api/playlists/:id
 router.delete('/:id', auth, async (req, res) => {
   try {
     const [result] = await pool.query(
@@ -103,17 +98,14 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-// POST /api/playlists/:id/songs — add song to playlist
 router.post('/:id/songs', auth, async (req, res) => {
   try {
     const { song_id } = req.body;
     if (!song_id) return res.status(400).json({ error: 'song_id is required' });
 
-    // Verify ownership
     const [pl] = await pool.query('SELECT id FROM playlists WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
     if (pl.length === 0) return res.status(404).json({ error: 'Playlist not found' });
 
-    // Get next position
     const [[{ maxPos }]] = await pool.query(
       'SELECT COALESCE(MAX(position), 0) AS maxPos FROM playlist_songs WHERE playlist_id = ?',
       [req.params.id]
@@ -133,7 +125,6 @@ router.post('/:id/songs', auth, async (req, res) => {
   }
 });
 
-// DELETE /api/playlists/:id/songs/:songId
 router.delete('/:id/songs/:songId', auth, async (req, res) => {
   try {
     const [result] = await pool.query(

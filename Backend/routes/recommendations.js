@@ -2,15 +2,12 @@ const router = require('express').Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 
-// GET /api/recommendations
 router.get('/', auth, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
 
-    // Execute stored procedure
     const [rows] = await pool.query('CALL sp_get_recommendations(?, ?)', [req.user.id, limit]);
 
-    // MySQL stored procedure results come as rows[0]
     const items = Array.isArray(rows[0]) ? rows[0] : (Array.isArray(rows) ? rows : []);
     const isPersonalized = items.some(item => Boolean(item.is_personalized));
     const strategy = items[0]?.strategy || (isPersonalized ? 'collaborative_filtering' : 'popularity_baseline');
@@ -33,7 +30,7 @@ router.get('/', auth, async (req, res) => {
     });
   } catch (err) {
     console.error('Recommendations error:', err);
-    // Fallback: If stored procedure fails, execute valid popularity baseline excluding already-listened songs
+
     try {
       const limit = parseInt(req.query.limit) || 20;
       const [rows] = await pool.query(

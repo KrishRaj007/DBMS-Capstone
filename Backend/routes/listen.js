@@ -2,7 +2,6 @@ const router = require('express').Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 
-// POST /api/listen — log a listen event
 router.post('/', auth, async (req, res) => {
   try {
     const { song_id, duration_listened } = req.body;
@@ -20,7 +19,6 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// GET /api/listen/history?page=&limit=
 router.get('/history', auth, async (req, res) => {
   try {
     const { page = 1, limit = 30 } = req.query;

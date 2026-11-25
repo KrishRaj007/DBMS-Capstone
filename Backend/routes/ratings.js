@@ -2,7 +2,6 @@ const router = require('express').Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 
-// POST /api/ratings — rate a song (upsert)
 router.post('/', auth, async (req, res) => {
   try {
     const { song_id, rating } = req.body;
@@ -23,7 +22,6 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// GET /api/ratings/user — all of the current user's ratings
 router.get('/user', auth, async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -45,7 +43,6 @@ router.get('/user', auth, async (req, res) => {
   }
 });
 
-// GET /api/ratings/song/:songId — get avg rating + user's rating for a song
 router.get('/song/:songId', auth, async (req, res) => {
   try {
     const [[avg]] = await pool.query(
