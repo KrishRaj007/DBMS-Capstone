@@ -29,7 +29,7 @@ router.post('/register', async (req, res) => {
 
     const token = jwt.sign(
       { id: result.insertId, username, email },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'beatpulse_jwt_secret_key_2026',
       { expiresIn: '7d' }
     );
 
@@ -63,7 +63,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { id: user.id, username: user.username, email: user.email },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'beatpulse_jwt_secret_key_2026',
       { expiresIn: '7d' }
     );
 
