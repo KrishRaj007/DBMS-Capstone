@@ -30,12 +30,8 @@ if (!MOCK_MODE) {
       conn.release();
     })
     .catch(err => {
-      console.error('\n❌ FATAL: Cannot connect to MySQL database.');
-      console.error(`   Code   : ${err.code}`);
-      console.error(`   Message: ${err.message}`);
-      console.error('\n👉 Check Backend/.env — ensure DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME are correct.');
-      console.error('👉 Run `npm run init-db` to initialise the schema if the database does not exist yet.\n');
-      process.exit(1);
+      console.warn(`⚠️ Warning: Cannot connect to MySQL (${err.message}). Falling back to in-memory store for serverless/standalone execution.`);
+      mysqlPool = null;
     });
 } else {
   console.log(`⚡ Running in ${process.env.NODE_ENV === 'test' ? 'TEST' : 'MOCK'} mode — using in-memory mock store.`);
@@ -48,7 +44,12 @@ const pool = {
       return executeMockQuery(sql, params);
     }
 
-    return mysqlPool.query(sql, params);
+    try {
+      return await mysqlPool.query(sql, params);
+    } catch (err) {
+      console.warn(`⚠️ MySQL query error (${err.message}), falling back to in-memory store.`);
+      return executeMockQuery(sql, params);
+    }
   },
 
   isMock: MOCK_MODE,
